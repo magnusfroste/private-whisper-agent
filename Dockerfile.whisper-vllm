@@ -1,14 +1,14 @@
 FROM vllm/vllm-openai:latest
 
-# Verify CUDA is available
-RUN nvidia-smi || true
-
 # Install audio dependencies for Whisper support
 RUN pip install --no-cache-dir \
     "vllm[audio]" \
     librosa \
     resampy \
     soundfile
+
+# Verify GPU at runtime (entrypoint check)
+ENTRYPOINT ["/bin/bash", "-c", "nvidia-smi && exec vllm \"$@\"", "--"]
 
 # GPU & NCCL optimization (from working Qwen config)
 ENV CUDA_DEVICE_ORDER=PCI_BUS_ID \
@@ -30,9 +30,10 @@ ENV CUDA_DEVICE_ORDER=PCI_BUS_ID \
 # Default model
 ENV DEFAULT_MODEL="openai/whisper-large-v3"
 
-CMD ["openai/whisper-large-v3", \
+CMD ["--model", "openai/whisper-large-v3", \
      "--port", "8001", \
      "--served-model-name", "whisper", \
+     "--device", "cuda", \
      "--gpu-memory-utilization", "0.8", \
      "--max-num-seqs", "8", \
      "--swap-space", "10", \
