@@ -41,6 +41,13 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
     checkHealth()
   }, [])
 
+  // Log liveText changes
+  useEffect(() => {
+    if (liveText) {
+      console.log('[Live] liveText uppdaterad:', liveText.substring(0, 50))
+    }
+  }, [liveText])
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -133,10 +140,10 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
 
       // Append to live text
       setLiveText(prev => {
-        if (prev && !data.text.startsWith(prev)) {
-          return prev + ' ' + data.text
-        }
-        return data.text
+        console.log('[Live] setLiveText prev:', prev)
+        const newText = prev && !data.text.startsWith(prev) ? prev + ' ' + data.text : data.text
+        console.log('[Live] setLiveText ny text:', newText)
+        return newText
       })
     } catch (err) {
       console.warn('[Live] Transkriberingsfel:', err)
