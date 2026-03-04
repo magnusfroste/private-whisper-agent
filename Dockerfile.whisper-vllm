@@ -22,10 +22,16 @@ ENV CUDA_DEVICE_ORDER=PCI_BUS_ID \
     OMP_NUM_THREADS=16 \
     VLLM_WORKER_MULTIPROC_METHOD=spawn \
     VLLM_SLEEP_WHEN_IDLE=1 \
-    VLLM_ATTENTION_BACKEND=FLASHINFER
+    VLLM_ATTENTION_BACKEND=FLASHINFER \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 # Default model
 ENV DEFAULT_MODEL="openai/whisper-large-v3"
+
+# Label for EasyPanel to recognize GPU requirements
+LABEL easypanel-gpu="true"
+LABEL easypanel-device-mapping="/dev/nvidia0:/dev/nvidia0,/dev/nvidiactl:/dev/nvidiactl,/dev/nvidia-uvm:/dev/nvidia-uvm"
 
 ENTRYPOINT ["vllm", "serve"]
 
