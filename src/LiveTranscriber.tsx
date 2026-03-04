@@ -80,6 +80,8 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
           console.log('[Live] Skickar chunk:', blob.size, 'bytes')
           await sendChunk(blob)
           chunksRef.current = [] // Clear after sending
+        } else {
+          console.log('[Live] Inga chunks att skicka')
         }
       }, 3000)
 
@@ -103,6 +105,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
   }
 
   const sendChunk = async (blobData: Blob) => {
+    console.log('[Live] sendChunk startad, blob size:', blobData.size)
     // Skip if already processing to avoid queue buildup
     if (isProcessing) {
       console.log('[Live] Hoppar över chunk - bearbetar redan')
@@ -112,6 +115,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
     setIsProcessing(true)
     const formData = new FormData()
     formData.append('file', blobData, 'recording.webm')
+    console.log('[Live] FormData skapat')
 
     try {
       const response = await fetch('/api/transcribe', {
