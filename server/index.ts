@@ -108,9 +108,48 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
   // Read file from disk
   const audioBuffer = fs.readFileSync(req.file.path)
 
-  // Determine filename based on actual format
-  const filename = req.file.mimetype.includes('webm') ? 'recording.webm' : 'audio.wav'
+  // Convert WebM/Opus to WAV if needed
+  if (req.file.mimetype.includes('webm') || req.file.mimetype.includes('ogg')) {
+    console.log('[Transcribe] Konverterar WebM/OGG till WAV...')
+    const convertStart = Date.now()
+    try {
+      const wavBuffer = await convertToWav(audioBuffer)
+      console.log('[Transcribe] Konvertering klar på', Date.now() - convertStart, 'ms')
+      console.log('[Transcribe] WAV storlek:', wavBuffer.length, 'bytes')
+      // Use WAV buffer for Whisper
+      const formData = new FormData()
+      formData.append('file', new Blob([wavBuffer as unknown as BlobPart]), 'audio.wav')
+      formData.append('model', 'openai/whisper-large-v3')
+      formData.append('language', 'sv')
+      formData.append('response_format', 'json')
 
+      const startTime = Date.now()
+      const response = await fetch(`${WHISPER_URL}/v1/audio/transcriptions`, {
+        method: 'POST',
+        body: formData
+      })
+      const duration = Date.now() - startTime
+
+      console.log('[Transcribe] Whisper svarade med status:', response.status, `(${duration}ms)`)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[Transcribe] FEL från Whisper:', response.status, errorText)
+        throw new Error(`Whisper API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      console.log('[Transcribe] Framgång! Text:', data.text?.substring(0, 50) + '...')
+      res.json(data)
+      return
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message.substring(0, 50) : String(err)
+      console.error('[Transcribe] Konvertering misslyckades:', errorMsg)
+    }
+  }
+
+  // Fallback: send original file
+  const filename = req.file.mimetype.includes('webm') ? 'recording.webm' : 'audio.wav'
   const formData = new FormData()
   formData.append('file', new Blob([audioBuffer as unknown as BlobPart]), filename)
   formData.append('model', 'openai/whisper-large-v3')
