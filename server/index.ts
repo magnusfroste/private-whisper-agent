@@ -26,8 +26,15 @@ const WHISPER_URL = process.env.WHISPER_URL || 'http://whisper-vllm:8001'
 // Serve static files from dist
 app.use(express.static(path.join(__dirname, '../dist')))
 
-// Configure multer for memory storage
-const storage = multer.memoryStorage()
+// Configure multer for disk storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, '/tmp')
+  },
+  filename: (req, file, cb) => {
+    cb(null, `audio-${Date.now()}-${Math.random().toString(36).substr(2, 9)}${path.extname(file.originalname)}`)
+  }
+})
 const upload = multer({ storage })
 
 interface MulterRequest extends express.Request {
@@ -95,26 +102,11 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
 
   console.log('[Transcribe] Filstorlek:', req.file.size, 'bytes')
   console.log('[Transcribe] Original format:', req.file.mimetype)
+  console.log('[Transcribe] Tempfil:', req.file.path)
   console.log('[Transcribe] Skickar till Whisper:', WHISPER_URL)
 
-  let audioBuffer = req.file.buffer
-
-  // Try to convert WebM/Opus to WAV if needed
-  if (req.file.mimetype.includes('webm') || req.file.mimetype.includes('ogg')) {
-    console.log('[Transcribe] Konverterar WebM/OGG till WAV...')
-    const convertStart = Date.now()
-    try {
-      audioBuffer = await convertToWav(req.file.buffer)
-      console.log('[Transcribe] Konvertering klar på', Date.now() - convertStart, 'ms')
-      console.log('[Transcribe] WAV storlek:', audioBuffer.length, 'bytes')
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message.substring(0, 50) : String(err)
-      console.error('[Transcribe] Konvertering misslyckades:', errorMsg)
-      // Fallback: try sending original WebM directly
-      console.log('[Transcribe] Försöker med original WebM-fil...')
-      audioBuffer = req.file.buffer
-    }
-  }
+  // Read file from disk
+  const audioBuffer = fs.readFileSync(req.file.path)
 
   // Determine filename based on actual format
   const filename = req.file.mimetype.includes('webm') ? 'recording.webm' : 'audio.wav'
@@ -147,6 +139,11 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
   } catch (error) {
     console.error('[Transcribe] FEL:', error instanceof Error ? error.message : error)
     res.status(500).json({ error: 'Failed to transcribe audio', details: error instanceof Error ? error.message : String(error) })
+  } finally {
+    // Cleanup temp file
+    try {
+      fs.unlinkSync(req.file.path)
+    } catch {}
   }
 })
 
