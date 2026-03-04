@@ -5,14 +5,10 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 import os from 'os'
+import { spawn } from 'child_process'
 
-import ffmpeg from 'fluent-ffmpeg'
-
-// Set ffmpeg path
-import ffmpegPath from 'ffmpeg-static'
-if (ffmpegPath) {
-  ffmpeg.setFfmpegPath(ffmpegPath)
-}
+// Get ffmpeg path
+const ffmpegPath = '/usr/bin/ffmpeg'
 
 dotenv.config()
 
@@ -51,45 +47,50 @@ const convertToWav = async (audioBuffer: Buffer): Promise<Buffer> => {
   const inputPath = createTempFile() + '.webm'
   const outputPath = createTempFile() + '.wav'
 
-  try {
+  return new Promise((resolve, reject) => {
     // Write input file
     fs.writeFileSync(inputPath, audioBuffer)
 
-    // Convert using ffmpeg - use addOutputOptions for audio settings
-    await new Promise<void>((resolve, reject) => {
-      ffmpeg(inputPath)
-        .addOutputOptions([
-          '-acodec pcm_s16le',  // 16-bit PCM
-          '-ar 16000',          // 16kHz sample rate
-          '-ac 1'               // Mono
-        ])
-        .save(outputPath)
-        .on('end', () => {
-          console.log('[FFmpeg] Konvertering klar')
-          resolve()
-        })
-        .on('error', (err: Error) => {
-          console.error('[FFmpeg] Konverteringsfel:', err)
-          reject(err)
-        })
+    // Spawn ffmpeg process
+    const ffmpegProcess = spawn(ffmpegPath, [
+      '-i', inputPath,
+      '-acodec', 'pcm_s16le',
+      '-ar', '16000',
+      '-ac', '1',
+      outputPath
+    ])
+
+    let stderr = ''
+    ffmpegProcess.stderr.on('data', (data) => {
+      stderr += data.toString()
     })
 
-    // Read converted file
-    const wavBuffer = fs.readFileSync(outputPath)
+    ffmpegProcess.on('close', (code) => {
+      if (code === 0) {
+        console.log('[FFmpeg] Konvertering klar')
+        const wavBuffer = fs.readFileSync(outputPath)
+        // Cleanup
+        fs.unlinkSync(inputPath)
+        fs.unlinkSync(outputPath)
+        resolve(wavBuffer)
+      } else {
+        console.error('[FFmpeg] Konverteringsfel, exit code:', code)
+        console.error('[FFmpeg] stderr:', stderr)
+        // Cleanup
+        try { fs.unlinkSync(inputPath) } catch {}
+        try { fs.unlinkSync(outputPath) } catch {}
+        reject(new Error(`ffmpeg exited with code ${code}`))
+      }
+    })
 
-    // Cleanup
-    fs.unlinkSync(inputPath)
-    fs.unlinkSync(outputPath)
-
-    return wavBuffer
-  } catch (err) {
-    // Cleanup on error
-    try {
-      fs.unlinkSync(inputPath)
-      if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath)
-    } catch {}
-    throw err
-  }
+    ffmpegProcess.on('error', (err) => {
+      console.error('[FFmpeg] Process error:', err)
+      // Cleanup
+      try { fs.unlinkSync(inputPath) } catch {}
+      try { fs.unlinkSync(outputPath) } catch {}
+      reject(err)
+    })
+  })
 }
 
 app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, res: express.Response) => {
@@ -108,9 +109,48 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
   // Read file from disk
   const audioBuffer = fs.readFileSync(req.file.path)
 
-  // Determine filename based on actual format
-  const filename = req.file.mimetype.includes('webm') ? 'recording.webm' : 'audio.wav'
+  // Convert WebM/Opus to WAV if needed
+  if (req.file.mimetype.includes('webm') || req.file.mimetype.includes('ogg')) {
+    console.log('[Transcribe] Konverterar WebM/OGG till WAV...')
+    const convertStart = Date.now()
+    try {
+      const wavBuffer = await convertToWav(audioBuffer)
+      console.log('[Transcribe] Konvertering klar på', Date.now() - convertStart, 'ms')
+      console.log('[Transcribe] WAV storlek:', wavBuffer.length, 'bytes')
+      // Use WAV buffer for Whisper
+      const formData = new FormData()
+      formData.append('file', new Blob([wavBuffer as unknown as BlobPart]), 'audio.wav')
+      formData.append('model', 'openai/whisper-large-v3')
+      formData.append('language', 'sv')
+      formData.append('response_format', 'json')
 
+      const startTime = Date.now()
+      const response = await fetch(`${WHISPER_URL}/v1/audio/transcriptions`, {
+        method: 'POST',
+        body: formData
+      })
+      const duration = Date.now() - startTime
+
+      console.log('[Transcribe] Whisper svarade med status:', response.status, `(${duration}ms)`)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[Transcribe] FEL från Whisper:', response.status, errorText)
+        throw new Error(`Whisper API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      console.log('[Transcribe] Framgång! Text:', data.text?.substring(0, 50) + '...')
+      res.json(data)
+      return
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message.substring(0, 50) : String(err)
+      console.error('[Transcribe] Konvertering misslyckades:', errorMsg)
+    }
+  }
+
+  // Fallback: send original file
+  const filename = req.file.mimetype.includes('webm') ? 'recording.webm' : 'audio.wav'
   const formData = new FormData()
   formData.append('file', new Blob([audioBuffer as unknown as BlobPart]), filename)
   formData.append('model', 'openai/whisper-large-v3')
