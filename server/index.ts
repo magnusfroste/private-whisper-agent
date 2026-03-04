@@ -3,8 +3,11 @@ import multer from 'multer'
 import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
+
+// Declare module for fluent-ffmpeg (no types available)
+declare module 'fluent-ffmpeg'
+
 import ffmpeg from 'fluent-ffmpeg'
-import { promisify } from 'util'
 
 // Set ffmpeg path
 import ffmpegPath from 'ffmpeg-static'
@@ -43,15 +46,15 @@ const convertToWav = async (audioBuffer: Buffer): Promise<Buffer> => {
       .on('end', () => {
         resolve(Buffer.concat(chunks))
       })
-      .on('error', (err) => {
+      .on('error', (err: Error) => {
         console.error('[FFmpeg] Konverteringsfel:', err)
         reject(err)
       })
-      .on('progress', (progress) => {
+      .on('progress', (progress: any) => {
         console.log('[FFmpeg] Konverterar:', progress.percent || 0, '%')
       })
-      .pipe((stream) => {
-        stream.on('data', (chunk) => chunks.push(chunk))
+      .pipe((stream: any) => {
+        stream.on('data', (chunk: Buffer) => chunks.push(chunk))
         return stream
       })
   })
