@@ -107,8 +107,9 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
       audioBuffer = await convertToWav(req.file.buffer)
       console.log('[Transcribe] Konvertering klar på', Date.now() - convertStart, 'ms')
       console.log('[Transcribe] WAV storlek:', audioBuffer.length, 'bytes')
-    } catch (err) {
-      console.error('[Transcribe] Konvertering misslyckades:', err.message.substring(0, 50))
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message.substring(0, 50) : String(err)
+      console.error('[Transcribe] Konvertering misslyckades:', errorMsg)
       // Fallback: try sending original WebM directly
       console.log('[Transcribe] Försöker med original WebM-fil...')
       audioBuffer = req.file.buffer
