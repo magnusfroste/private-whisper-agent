@@ -16,6 +16,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install ffmpeg
+RUN apk add --no-cache ffmpeg
+
 # Copy built frontend and compiled server
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server/index.js ./server/
