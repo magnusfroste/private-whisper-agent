@@ -3,6 +3,8 @@ import multer from 'multer'
 import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'fs'
+import os from 'os'
 
 // Declare module for fluent-ffmpeg (no types available)
 declare module 'fluent-ffmpeg'
@@ -33,31 +35,53 @@ interface MulterRequest extends express.Request {
   file?: Express.Multer.File
 }
 
+// Create temp file
+const createTempFile = (): string => {
+  return path.join(os.tmpdir(), `audio-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
+}
+
 // Convert buffer to WAV using ffmpeg
 const convertToWav = async (audioBuffer: Buffer): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = []
+  const inputPath = createTempFile() + '.webm'
+  const outputPath = createTempFile() + '.wav'
 
-    ffmpeg(audioBuffer)
-      .audioBits(16)
-      .audioChannels(1)
-      .audioFrequency(16000)
-      .format('wav')
-      .on('end', () => {
-        resolve(Buffer.concat(chunks))
-      })
-      .on('error', (err: Error) => {
-        console.error('[FFmpeg] Konverteringsfel:', err)
-        reject(err)
-      })
-      .on('progress', (progress: any) => {
-        console.log('[FFmpeg] Konverterar:', progress.percent || 0, '%')
-      })
-      .pipe((stream: any) => {
-        stream.on('data', (chunk: Buffer) => chunks.push(chunk))
-        return stream
-      })
-  })
+  try {
+    // Write input file
+    fs.writeFileSync(inputPath, audioBuffer)
+
+    // Convert using ffmpeg
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(inputPath)
+        .audioBits(16)
+        .audioChannels(1)
+        .audioFrequency(16000)
+        .save(outputPath)
+        .on('end', () => {
+          console.log('[FFmpeg] Konvertering klar')
+          resolve()
+        })
+        .on('error', (err: Error) => {
+          console.error('[FFmpeg] Konverteringsfel:', err)
+          reject(err)
+        })
+    })
+
+    // Read converted file
+    const wavBuffer = fs.readFileSync(outputPath)
+
+    // Cleanup
+    fs.unlinkSync(inputPath)
+    fs.unlinkSync(outputPath)
+
+    return wavBuffer
+  } catch (err) {
+    // Cleanup on error
+    try {
+      fs.unlinkSync(inputPath)
+      if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath)
+    } catch {}
+    throw err
+  }
 }
 
 app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, res: express.Response) => {
@@ -81,6 +105,7 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
     try {
       audioBuffer = await convertToWav(req.file.buffer)
       console.log('[Transcribe] Konvertering klar på', Date.now() - convertStart, 'ms')
+      console.log('[Transcribe] WAV storlek:', audioBuffer.length, 'bytes')
     } catch (err) {
       console.error('[Transcribe] Konvertering misslyckades:', err)
       // Fallback: try sending original anyway
