@@ -63,8 +63,8 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       }
 
       mediaRecorderRef.current = mediaRecorder
-      // Start with timeslice of 2000ms to get data every 2 seconds
-      mediaRecorder.start(2000)
+      // Start with timeslice of 5000ms to get data every 5 seconds
+      mediaRecorder.start(5000)
       setIsRecording(true)
 
       console.log('[Live] Inspeking startad')
@@ -83,6 +83,12 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
   }
 
   const sendChunk = async (blobData: Blob) => {
+    // Skip if already processing to avoid queue buildup
+    if (isProcessing) {
+      console.log('[Live] Hoppar över chunk - bearbetar redan')
+      return
+    }
+
     setIsProcessing(true)
     const formData = new FormData()
     formData.append('file', blobData, 'recording.webm')
@@ -94,7 +100,10 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       })
 
       if (!response.ok) {
-        throw new Error('Transkribering misslyckades')
+        console.warn('[Live] Transkribering misslyckades:', response.status)
+        // Don't show error, just skip this chunk
+        setIsProcessing(false)
+        return
       }
 
       const data = await response.json()
@@ -108,8 +117,8 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
         return data.text
       })
     } catch (err) {
-      setError('Kunde inte transkribera. Kontrollera Whisper-servern.')
-      console.error('Transcription error:', err)
+      console.warn('[Live] Transkriberingsfel:', err)
+      // Don't show error, just skip this chunk
     } finally {
       setIsProcessing(false)
     }
@@ -247,7 +256,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
           <h3 className="font-semibold mb-2">Instruktioner:</h3>
           <ul className="text-sm text-gray-400 space-y-1">
             <li>• Klicka "Spela in" för att börja transkribera</li>
-            <li>• Texten uppdateras automatiskt var 2:a sekund</li>
+            <li>• Texten uppdateras automatiskt var 5:e sekund</li>
             <li>• Klicka "Stoppa" när du är klar</li>
             <li>• Kopiera texten eller rensa för nytt</li>
           </ul>
