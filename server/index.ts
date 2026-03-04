@@ -120,7 +120,7 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
       // Use WAV buffer for Whisper
       const formData = new FormData()
       formData.append('file', new Blob([wavBuffer as unknown as BlobPart]), 'audio.wav')
-      formData.append('model', 'openai/whisper-large-v3')
+      formData.append('model', 'whisper-large-v3')
       formData.append('language', 'sv')
       formData.append('response_format', 'json')
 
@@ -153,7 +153,7 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
   const filename = req.file.mimetype.includes('webm') ? 'recording.webm' : 'audio.wav'
   const formData = new FormData()
   formData.append('file', new Blob([audioBuffer as unknown as BlobPart]), filename)
-  formData.append('model', 'openai/whisper-large-v3')
+  formData.append('model', 'whisper-large-v3')
   formData.append('language', 'sv')
   formData.append('response_format', 'json')
 
