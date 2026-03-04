@@ -6,7 +6,18 @@ services:
     restart: unless-stopped
     ipc: host
     shm_size: '8gb'
-    # IMPORTANT: In EasyPanel, enable GPU support in App Settings -> Resources
+    # DNS configuration for HuggingFace access
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    # GPU support for CUDA
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     environment:
       - HUGGINGFACE_TOKEN=${HF_TOKEN}
       - CUDA_DEVICE_ORDER=PCI_BUS_ID

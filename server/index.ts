@@ -3,6 +3,12 @@ import multer from 'multer'
 import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import ffmpeg from 'fluent-ffmpeg'
+import { promisify } from 'util'
+
+// Set ffmpeg path
+import ffmpegPath from 'ffmpeg-static'
+ffmpeg.setFfmpegPath(ffmpegPath)
 
 dotenv.config()
 
@@ -24,6 +30,33 @@ interface MulterRequest extends express.Request {
   file?: Express.Multer.File
 }
 
+// Convert buffer to WAV using ffmpeg
+const convertToWav = async (audioBuffer: Buffer): Promise<Buffer> => {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+
+    ffmpeg(audioBuffer)
+      .audioBits(16)
+      .audioChannels(1)
+      .audioFrequency(16000)
+      .format('wav')
+      .on('end', () => {
+        resolve(Buffer.concat(chunks))
+      })
+      .on('error', (err) => {
+        console.error('[FFmpeg] Konverteringsfel:', err)
+        reject(err)
+      })
+      .on('progress', (progress) => {
+        console.log('[FFmpeg] Konverterar:', progress.percent || 0, '%')
+      })
+      .pipe((stream) => {
+        stream.on('data', (chunk) => chunks.push(chunk))
+        return stream
+      })
+  })
+}
+
 app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, res: express.Response) => {
   console.log('[Transcribe] Mottog fil:', req.file?.originalname || 'ingen fil')
 
@@ -33,10 +66,28 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
   }
 
   console.log('[Transcribe] Filstorlek:', req.file.size, 'bytes')
+  console.log('[Transcribe] Original format:', req.file.mimetype)
   console.log('[Transcribe] Skickar till Whisper:', WHISPER_URL)
 
+  let audioBuffer = req.file.buffer
+
+  // Convert WebM/Opus to WAV if needed
+  if (req.file.mimetype.includes('webm') || req.file.mimetype.includes('ogg')) {
+    console.log('[Transcribe] Konverterar WebM/OGG till WAV...')
+    const convertStart = Date.now()
+    try {
+      audioBuffer = await convertToWav(req.file.buffer)
+      console.log('[Transcribe] Konvertering klar på', Date.now() - convertStart, 'ms')
+    } catch (err) {
+      console.error('[Transcribe] Konvertering misslyckades:', err)
+      // Fallback: try sending original anyway
+      console.log('[Transcribe] Försöker med originalfil...')
+      audioBuffer = req.file.buffer
+    }
+  }
+
   const formData = new FormData()
-  formData.append('file', new Blob([req.file.buffer as unknown as BlobPart]), req.file.originalname)
+  formData.append('file', new Blob([audioBuffer as unknown as BlobPart]), 'audio.wav')
   formData.append('model', 'openai/whisper-large-v3')
   formData.append('language', 'sv')
   formData.append('response_format', 'json')
