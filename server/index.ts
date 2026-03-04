@@ -48,12 +48,12 @@ const convertToWav = async (audioBuffer: Buffer): Promise<Buffer> => {
     // Write input file
     fs.writeFileSync(inputPath, audioBuffer)
 
-    // Convert using ffmpeg
+    // Convert using ffmpeg with correct API
     await new Promise<void>((resolve, reject) => {
       ffmpeg(inputPath)
-        .audioBits(16)
-        .audioChannels(1)
-        .audioFrequency(16000)
+        .withAudioBitrate(128)
+        .withAudioChannels(1)
+        .withAudioFrequency(16000)
         .save(outputPath)
         .on('end', () => {
           console.log('[FFmpeg] Konvertering klar')
