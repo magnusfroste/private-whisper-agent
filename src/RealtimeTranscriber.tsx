@@ -13,12 +13,12 @@ interface HealthStatus {
 
 export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps) {
   const [isRecording, setIsRecording] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
   const [transcribedText, setTranscribedText] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [health, setHealth] = useState<HealthStatus | null>(null)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const isProcessingRef = useRef(false) // Use ref for mutable access in async callbacks
 
   const checkHealth = async () => {
     try {
@@ -42,6 +42,15 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
   useEffect(() => {
     console.log('[Realtime] Re-render triggered, text:', transcribedText.substring(0, 50))
   }, [transcribedText])
+
+  // Track processing state for UI
+  const [isProcessingUI, setIsProcessingUI] = useState(false)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsProcessingUI(isProcessingRef.current)
+    }, 100)
+    return () => clearInterval(interval)
+  }, [])
 
   const startRecording = async () => {
     try {
@@ -87,12 +96,12 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
   // Send chunk function
   const sendChunk = async (chunk: Blob) => {
     // Skip if already processing to avoid queue buildup
-    if (isProcessing) {
+    if (isProcessingRef.current) {
       console.log('[Realtime] Hoppar över - bearbetar redan')
       return
     }
 
-    setIsProcessing(true)
+    isProcessingRef.current = true
     const formData = new FormData()
     formData.append('file', chunk, 'recording.webm')
 
@@ -118,7 +127,7 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
     } catch (err) {
       console.warn('[Realtime] Transkriberingsfel:', err)
     } finally {
-      setIsProcessing(false)
+      isProcessingRef.current = false
     }
   }
 
@@ -184,7 +193,7 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
           <div className="text-center mb-4">
             <span className="inline-flex items-center gap-2 text-red-400">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              Spelar in... ({isProcessing ? 'Skickar & bearbetar...' : 'Samlar in ljud'})
+              Spelar in... ({isProcessingUI ? 'Skickar & bearbetar...' : 'Samlar in ljud'})
             </span>
           </div>
         )}
