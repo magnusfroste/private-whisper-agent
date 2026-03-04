@@ -4,14 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile.whisper-vllm
     restart: unless-stopped
-    runtime: nvidia
     ipc: host
     shm_size: '8gb'
+    # IMPORTANT: In EasyPanel, enable GPU support in App Settings -> Resources
     environment:
       - HUGGINGFACE_TOKEN=${HF_TOKEN}
       - CUDA_DEVICE_ORDER=PCI_BUS_ID
       - VLLM_NO_USAGE_STATS=1
-      - NVIDIA_VISIBLE_DEVICES=all
     volumes:
       - /home/ss/.cache/huggingface:/root/.cache/huggingface
     ports:
