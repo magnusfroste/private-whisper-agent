@@ -469,18 +469,16 @@ function App() {
 
         {history.length > 0 && (
           <div className="space-y-2">
-            <h2 className="text-lg font-semibold mb-4">History</h2>
+            <h2 className="text-lg font-semibold mb-4 text-gray-500">History</h2>
             {history.map((item, index) => (
               <div
                 key={index}
-                className={`rounded-lg p-4 border ${getLatencyBgColor(item.latency)}`}
+                className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-4"
               >
-                <p className="text-sm mb-2">{item.text}</p>
-                <div className="flex justify-between items-center text-xs text-gray-400">
+                <p className="text-sm mb-2 text-gray-300">{item.text}</p>
+                <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>{formatTime(item.timestamp)}</span>
-                  <span className={getLatencyColor(item.latency)}>
-                    {item.latency}ms
-                  </span>
+                  <span>{item.latency}ms</span>
                 </div>
               </div>
             ))}
