@@ -1,9 +1,16 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 interface Transcription {
   text: string
   latency: number
   timestamp: Date
+}
+
+interface HealthStatus {
+  status: string
+  whisper_connected: boolean
+  whisper_latency_ms?: number
+  error?: string
 }
 
 function App() {
@@ -12,9 +19,35 @@ function App() {
   const [currentLatency, setCurrentLatency] = useState<number | null>(null)
   const [history, setHistory] = useState<Transcription[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [health, setHealth] = useState<HealthStatus | null>(null)
+  const [checkingHealth, setCheckingHealth] = useState(false)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
+
+  const checkHealth = async () => {
+    setCheckingHealth(true)
+    try {
+      const response = await fetch('/api/health')
+      const data = await response.json()
+      setHealth(data)
+      console.log('Health check:', data)
+    } catch (err) {
+      console.error('Health check failed:', err)
+      setHealth({
+        status: 'unhealthy',
+        whisper_connected: false,
+        error: 'Kunde inte nå health endpoint'
+      })
+    } finally {
+      setCheckingHealth(false)
+    }
+  }
+
+  // Check health on mount
+  useEffect(() => {
+    checkHealth()
+  }, [])
 
   const getLatencyColor = (latency: number): string => {
     if (latency < 500) return 'text-green-400'
@@ -118,6 +151,39 @@ function App() {
         <h1 className="text-3xl font-bold text-center mb-8">
           Whisper Latens-test
         </h1>
+
+        {/* Health Status */}
+        <div className={`rounded-lg p-4 mb-6 border ${
+          health?.whisper_connected
+            ? 'bg-green-900/30 border-green-700'
+            : 'bg-red-900/30 border-red-700'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${
+                health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'
+              }`} />
+              <span className="font-semibold">
+                Whisper: {health?.whisper_connected ? 'Ansluten' : 'Kopplad'}
+              </span>
+            </div>
+            <button
+              onClick={checkHealth}
+              disabled={checkingHealth}
+              className="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded disabled:opacity-50"
+            >
+              {checkingHealth ? 'Kontrollerar...' : 'Uppdatera'}
+            </button>
+          </div>
+          {health?.whisper_latency_ms && (
+            <p className="text-sm text-gray-400 mt-2">
+              Latens till Whisper: {health.whisper_latency_ms}ms
+            </p>
+          )}
+          {health?.error && (
+            <p className="text-sm text-red-400 mt-2">{health.error}</p>
+          )}
+        </div>
 
         <div className="flex justify-center mb-8">
           <button
