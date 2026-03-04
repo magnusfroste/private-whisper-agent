@@ -17,13 +17,12 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
   const [error, setError] = useState<string | null>(null)
   const [health, setHealth] = useState<HealthStatus | null>(null)
   const [finalText, setFinalText] = useState('')
-  const [renderKey, setRenderKey] = useState(0) // Force re-render
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const lastSendTimeRef = useRef<number>(0)
   const liveTextRef = useRef('')
-  const liveTextElementRef = useRef<HTMLParagraphElement>(null)
+  const liveTextElementRef = useRef<HTMLTextAreaElement>(null)
 
   const checkHealth = async () => {
     try {
@@ -140,14 +139,13 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
         : data.text
       liveTextRef.current = newText
 
-      // Update text ref and force re-render
+      // Update text ref
       liveTextRef.current = newText
-      setRenderKey(k => k + 1) // Force re-render
 
       // Direct DOM update with requestAnimationFrame
       if (liveTextElementRef.current) {
         requestAnimationFrame(() => {
-          liveTextElementRef.current!.textContent = newText
+          liveTextElementRef.current!.value = newText
           console.log('[Live] DOM uppdaterad:', newText.substring(0, 50))
         })
       }
@@ -277,12 +275,18 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
             )}
 
             {/* Live text (while recording) */}
-            <div key={renderKey} className="bg-blue-900/20 rounded-lg p-6 border border-blue-700">
+            <div className="bg-blue-900/20 rounded-lg p-6 border border-blue-700">
               <h3 className="text-sm text-blue-400 mb-2 flex items-center gap-2">
                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                 Live (uppdateras medan du pratar):
               </h3>
-              <p ref={liveTextElementRef} className="text-lg leading-relaxed">{liveTextRef.current}</p>
+              <textarea
+                ref={liveTextElementRef}
+                readOnly
+                className="w-full bg-transparent text-lg leading-relaxed text-white resize-none outline-none"
+                rows={3}
+                value={liveTextRef.current}
+              />
             </div>
           </div>
         )}
