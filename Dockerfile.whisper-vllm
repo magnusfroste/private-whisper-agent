@@ -29,15 +29,17 @@ ENV CUDA_DEVICE_ORDER=PCI_BUS_ID \
 # Default model
 ENV DEFAULT_MODEL="openai/whisper-large-v3"
 
-# Label for EasyPanel to recognize GPU requirements
-LABEL easypanel-gpu="true"
-LABEL easypanel-device-mapping="/dev/nvidia0:/dev/nvidia0,/dev/nvidiactl:/dev/nvidiactl,/dev/nvidia-uvm:/dev/nvidia-uvm"
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-ENTRYPOINT ["vllm", "serve"]
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
-CMD ["openai/whisper-large-v3", \
+CMD ["vllm", "serve", "openai/whisper-large-v3", \
      "--port", "8001", \
-     "--served-model-name", "whisper", \
-     "--gpu-memory-utilization", "0.8", \
+     "--served-model-name", "openai/whisper-large-v3", \
+     "--gpu-memory-utilization", "0.45", \
      "--max-num-seqs", "8", \
-     "--swap-space", "10"]
+     "--swap-space", "4", \
+     "--enforce-eager"]
