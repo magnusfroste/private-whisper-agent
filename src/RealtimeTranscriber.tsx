@@ -43,6 +43,44 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
     console.log('[Realtime] Re-render triggered, text:', transcribedText.substring(0, 50))
   }, [transcribedText])
 
+  // Send chunk directly from MediaRecorder - defined early for proper closure
+  const sendChunk = async (chunk: Blob) => {
+    if (isProcessingRef.current) {
+      console.log('[Realtime] Hoppar över - bearbetar redan')
+      return
+    }
+
+    isProcessingRef.current = true
+
+    try {
+      const formData = new FormData()
+      formData.append('file', chunk, 'recording.webm')
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[Realtime] Transkribering:', data.text)
+        setTranscribedText(prev => {
+          const newText = prev && !data.text.startsWith(prev)
+            ? prev + ' ' + data.text
+            : data.text
+          console.log('[Realtime] Text:', newText.substring(0, 50))
+          return newText
+        })
+      } else {
+        console.warn('[Realtime] Transkribering misslyckades:', response.status)
+      }
+    } catch (err) {
+      console.warn('[Realtime] Transkriberingsfel:', err)
+    } finally {
+      isProcessingRef.current = false
+    }
+  }
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -81,44 +119,6 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
       mediaRecorderRef.current.stop()
       setIsRecording(false)
       console.log('[Realtime] Inspeking stoppad')
-    }
-  }
-
-  // Send chunk directly from MediaRecorder
-  const sendChunk = async (chunk: Blob) => {
-    if (isProcessingRef.current) {
-      console.log('[Realtime] Hoppar över - bearbetar redan')
-      return
-    }
-
-    isProcessingRef.current = true
-
-    try {
-      const formData = new FormData()
-      formData.append('file', chunk, 'recording.webm')
-
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        console.log('[Realtime] Transkribering:', data.text)
-        setTranscribedText(prev => {
-          const newText = prev && !data.text.startsWith(prev)
-            ? prev + ' ' + data.text
-            : data.text
-          console.log('[Realtime] Text:', newText.substring(0, 50))
-          return newText
-        })
-      } else {
-        console.warn('[Realtime] Transkribering misslyckades:', response.status)
-      }
-    } catch (err) {
-      console.warn('[Realtime] Transkriberingsfel:', err)
-    } finally {
-      isProcessingRef.current = false
     }
   }
 
