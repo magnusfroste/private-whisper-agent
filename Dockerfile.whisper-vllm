@@ -34,5 +34,4 @@ CMD ["openai/whisper-large-v3", \
      "--served-model-name", "whisper", \
      "--gpu-memory-utilization", "0.8", \
      "--max-num-seqs", "8", \
-     "--swap-space", "10", \
-     "--disable-log-requests"]
+     "--swap-space", "10"]
