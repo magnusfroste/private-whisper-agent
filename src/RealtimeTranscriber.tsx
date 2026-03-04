@@ -19,7 +19,6 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
   const [health, setHealth] = useState<HealthStatus | null>(null)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const chunksRef = useRef<Blob[]>([])
 
   const checkHealth = async () => {
     try {
@@ -48,17 +47,18 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm'
+        mimeType: 'audio/webm;codecs=opus'
       })
 
-      chunksRef.current = []
       setTranscribedText('')
       setError(null)
 
-      // Collect chunks
-      mediaRecorder.ondataavailable = (event) => {
+      // Send each chunk directly when available (no merging!)
+      mediaRecorder.ondataavailable = async (event) => {
         if (event.data.size > 0) {
-          chunksRef.current.push(event.data)
+          console.log('[Realtime] Chunk mottagen:', event.data.size, 'bytes')
+          // Send immediately - each chunk is a valid WebM file
+          await sendChunk(event.data)
         }
       }
 
@@ -67,8 +67,9 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
       }
 
       mediaRecorderRef.current = mediaRecorder
-      mediaRecorder.start(5000) // Get chunks every 5 seconds for better quality
+      mediaRecorder.start(1000) // Get chunks every 1 second
       setIsRecording(true)
+      console.log('[Realtime] Inspeking startad')
     } catch (err) {
       setError('Kunde inte tillgripa mikrofonen.')
       console.error('Microphone error:', err)
@@ -79,57 +80,47 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
+      console.log('[Realtime] Inspeking stoppad')
     }
   }
 
-  // Send chunks periodically
-  useEffect(() => {
-    if (!isRecording) return
+  // Send chunk function
+  const sendChunk = async (chunk: Blob) => {
+    // Skip if already processing to avoid queue buildup
+    if (isProcessing) {
+      console.log('[Realtime] Hoppar över - bearbetar redan')
+      return
+    }
 
-    const interval = setInterval(async () => {
-      // Skip if already processing to avoid queue buildup
-      if (isProcessing) {
-        console.log('[Realtime] Hoppar över - bearbetar redan')
-        return
+    setIsProcessing(true)
+    const formData = new FormData()
+    formData.append('file', chunk, 'recording.webm')
+
+    try {
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[Realtime] Transkribering:', data.text)
+        setTranscribedText(prev => {
+          const newText = prev && !data.text.startsWith(prev)
+            ? prev + ' ' + data.text
+            : data.text
+          console.log('[Realtime] Text:', newText.substring(0, 50))
+          return newText
+        })
+      } else {
+        console.warn('[Realtime] Transkribering misslyckades:', response.status)
       }
-
-      if (chunksRef.current.length > 0) {
-        setIsProcessing(true)
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
-        chunksRef.current = []
-
-        try {
-          const formData = new FormData()
-          formData.append('file', blob, 'recording.webm')
-
-          const response = await fetch('/api/transcribe', {
-            method: 'POST',
-            body: formData
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            console.log('[Realtime] Transkribering:', data.text)
-            setTranscribedText(prev => {
-              const newText = prev && !data.text.startsWith(prev)
-                ? prev + ' ' + data.text
-                : data.text
-              console.log('[Realtime] Text:', newText.substring(0, 50))
-              return newText
-            })
-          } else {
-            console.warn('[Realtime] Transkribering misslyckades:', response.status)
-          }
-        } catch (err) {
-          console.warn('[Realtime] Transkriberingsfel:', err)
-        } finally {
-          setIsProcessing(false)
-        }
-      }
-    }, 5000) // Send chunks every 5 seconds for better audio quality
-
-    return () => clearInterval(interval)
-  }, [isRecording, isProcessing])
+    } catch (err) {
+      console.warn('[Realtime] Transkriberingsfel:', err)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(transcribedText)
@@ -236,7 +227,7 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
           <h3 className="font-semibold mb-2">Instruktioner:</h3>
           <ul className="text-sm text-gray-400 space-y-1">
             <li>• Klicka "Starta" för att börja transkribera</li>
-            <li>• Texten uppdateras automatiskt var 5:e sekund</li>
+            <li>• Texten uppdateras automatiskt var 1:a sekund medan du pratar</li>
             <li>• Klicka "Stoppa" när du är klar</li>
             <li>• Kopiera eller rensa texten</li>
           </ul>
