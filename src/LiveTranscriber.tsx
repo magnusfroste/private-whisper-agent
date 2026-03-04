@@ -17,6 +17,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
   const [error, setError] = useState<string | null>(null)
   const [health, setHealth] = useState<HealthStatus | null>(null)
   const [finalText, setFinalText] = useState('')
+  const [renderKey, setRenderKey] = useState(0) // Force re-render
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -146,8 +147,9 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
         : data.text
       liveTextRef.current = newText
 
-      // Store text in ref for useEffect to update DOM
+      // Update text ref and force re-render
       liveTextRef.current = newText
+      setRenderKey(k => k + 1) // Force re-render
       console.log('[Live] Text sparad i ref:', newText.substring(0, 50))
     } catch (err) {
       console.warn('[Live] Transkriberingsfel:', err)
@@ -275,7 +277,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
             )}
 
             {/* Live text (while recording) */}
-            <div className="bg-blue-900/20 rounded-lg p-6 border border-blue-700">
+            <div key={renderKey} className="bg-blue-900/20 rounded-lg p-6 border border-blue-700">
               <h3 className="text-sm text-blue-400 mb-2 flex items-center gap-2">
                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                 Live (uppdateras medan du pratar):
