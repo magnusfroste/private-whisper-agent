@@ -163,21 +163,13 @@ function App() {
         <div className="flex justify-center gap-4 mb-8">
           <button
             onClick={() => setView('push')}
-            className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
-              view === 'push'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
+            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-blue-600 text-white"
           >
             Push-to-Talk
           </button>
           <button
             onClick={() => setView('live')}
-            className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
-              view === 'live'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
+            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
           >
             Live Transkribering
           </button>
