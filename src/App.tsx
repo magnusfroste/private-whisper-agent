@@ -24,6 +24,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [health, setHealth] = useState<HealthStatus | null>(null)
   const [checkingHealth, setCheckingHealth] = useState(false)
+  const [language, setLanguage] = useState<'auto' | 'sv'>('auto')
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -108,6 +109,8 @@ function App() {
     const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
     const formData = new FormData()
     formData.append('file', blob, 'recording.webm')
+    // Send language preference to backend
+    formData.append('language', language === 'auto' ? '' : 'sv')
 
     try {
       const response = await fetch('/api/transcribe', {
@@ -392,6 +395,33 @@ function App() {
           >
             Realtime
           </button>
+        </div>
+
+        {/* Language Toggle */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-400 mb-2">Språk</label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setLanguage('auto')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                language === 'auto'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Auto-detect
+            </button>
+            <button
+              onClick={() => setLanguage('sv')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                language === 'sv'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Svenska
+            </button>
+          </div>
         </div>
 
         {/* Health Status */}

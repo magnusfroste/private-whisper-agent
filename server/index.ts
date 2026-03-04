@@ -101,10 +101,15 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
     return res.status(400).json({ error: 'No file uploaded' })
   }
 
+  // Get language from request or default to auto-detect
+  const requestedLanguage = (req.body.language as string) || ''
+  const language = requestedLanguage || undefined // undefined = auto-detect
+
   console.log('[Transcribe] Filstorlek:', req.file.size, 'bytes')
   console.log('[Transcribe] Original format:', req.file.mimetype)
   console.log('[Transcribe] Tempfil:', req.file.path)
   console.log('[Transcribe] Skickar till Whisper:', WHISPER_URL)
+  console.log('[Transcribe] Language:', language || 'auto-detect')
 
   // Read file from disk
   const audioBuffer = fs.readFileSync(req.file.path)
@@ -121,7 +126,7 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
       const formData = new FormData()
       formData.append('file', new Blob([wavBuffer as unknown as BlobPart]), 'audio.wav')
       formData.append('model', 'whisper-large-v3')
-      formData.append('language', 'sv')
+      if (language) formData.append('language', language)
       formData.append('response_format', 'json')
 
       const startTime = Date.now()
@@ -154,7 +159,7 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
   const formData = new FormData()
   formData.append('file', new Blob([audioBuffer as unknown as BlobPart]), filename)
   formData.append('model', 'whisper-large-v3')
-  formData.append('language', 'sv')
+  if (language) formData.append('language', language)
   formData.append('response_format', 'json')
 
   try {
