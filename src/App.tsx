@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import LiveTranscriber from './LiveTranscriber'
+import RealtimeTranscriber from './RealtimeTranscriber'
 
 interface Transcription {
   text: string
@@ -15,7 +16,7 @@ interface HealthStatus {
 }
 
 function App() {
-  const [view, setView] = useState<'push' | 'live'>('push')
+  const [view, setView] = useState<'push' | 'live' | 'realtime'>('push')
   const [isRecording, setIsRecording] = useState(false)
   const [currentResult, setCurrentResult] = useState<string | null>(null)
   const [currentLatency, setCurrentLatency] = useState<number | null>(null)
@@ -152,6 +153,11 @@ function App() {
     return <LiveTranscriber onBack={() => setView('push')} />
   }
 
+  // Show realtime transcriber view
+  if (view === 'realtime') {
+    return <RealtimeTranscriber onBack={() => setView('push')} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
@@ -172,6 +178,12 @@ function App() {
             className="px-6 py-2 rounded-lg font-semibold transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
           >
             Live Transkribering
+          </button>
+          <button
+            onClick={() => setView('realtime')}
+            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
+          >
+            Realtime
           </button>
         </div>
 
