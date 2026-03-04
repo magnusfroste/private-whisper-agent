@@ -32,7 +32,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       setHealth({
         status: 'unhealthy',
         whisper_connected: false,
-        error: 'Kunde inte nå Whisper'
+        error: 'Could not reach Whisper'
       })
     }
   }
@@ -41,7 +41,6 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
     checkHealth()
   }, [])
 
-  // Update DOM when liveTextRef changes and ref is ready
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -58,7 +57,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data)
-          console.log('[Live] Chunk mottagen:', event.data.size, 'bytes')
+          console.log('[Live] Chunk received:', event.data.size, 'bytes')
         }
       }
 
@@ -67,7 +66,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
         // Send any remaining chunks
         if (chunksRef.current.length > 0) {
           const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
-          console.log('[Live] Skickar sista chunk:', blob.size, 'bytes')
+          console.log('[Live] Sending final chunk:', blob.size, 'bytes')
           sendChunk(blob)
           chunksRef.current = []
         }
@@ -81,15 +80,15 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       intervalRef.current = setInterval(async () => {
         if (chunksRef.current.length > 0) {
           const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
-          console.log('[Live] Skickar chunk:', blob.size, 'bytes')
+          console.log('[Live] Sending chunk:', blob.size, 'bytes')
           await sendChunk(blob)
           chunksRef.current = []
         }
       }, 5000)
 
-      console.log('[Live] Inspeking startad')
+      console.log('[Live] Recording started')
     } catch (err) {
-      setError('Kunde inte tillgripa mikrofonen.')
+      setError('Could not access microphone.')
       console.error('Microphone error:', err)
     }
   }
@@ -102,22 +101,22 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       }
       mediaRecorderRef.current.stop()
       setIsRecording(false)
-      console.log('[Live] Inspeking stoppad')
+      console.log('[Live] Recording stopped')
     }
   }
 
   const sendChunk = async (blobData: Blob) => {
-    console.log('[Live] sendChunk startad, blob size:', blobData.size)
+    console.log('[Live] sendChunk started, blob size:', blobData.size)
     // Skip if already processing to avoid queue buildup
     if (isProcessing) {
-      console.log('[Live] Hoppar över chunk - bearbetar redan')
+      console.log('[Live] Skipping chunk - already processing')
       return
     }
 
     setIsProcessing(true)
     const formData = new FormData()
     formData.append('file', blobData, 'recording.webm')
-    console.log('[Live] FormData skapat')
+    console.log('[Live] FormData created')
 
     try {
       const response = await fetch('/api/transcribe', {
@@ -126,14 +125,14 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       })
 
       if (!response.ok) {
-        console.warn('[Live] Transkribering misslyckades:', response.status)
+        console.warn('[Live] Transcription failed:', response.status)
         // Don't show error, just skip this chunk
         setIsProcessing(false)
         return
       }
 
       const data = await response.json()
-      console.log('[Live] Transkribering:', data.text)
+      console.log('[Live] Transcription:', data.text)
 
       // Update live text state for real-time updates
       const newText = liveText && !data.text.startsWith(liveText)
@@ -142,7 +141,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       setLiveText(newText)
       console.log('[Live] setLiveText:', newText.substring(0, 50))
     } catch (err) {
-      console.warn('[Live] Transkriberingsfel:', err)
+      console.warn('[Live] Transcription error:', err)
       // Don't show error, just skip this chunk
     } finally {
       setIsProcessing(false)
@@ -152,7 +151,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
   const copyToClipboard = () => {
     const textToCopy = finalText || liveText
     navigator.clipboard.writeText(textToCopy)
-    alert('Text kopierad till urklipp!')
+    alert('Text copied to clipboard!')
   }
 
   const clearText = () => {
@@ -169,9 +168,9 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
             onClick={onBack}
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
-            ← Tillbaka till Push-to-Talk
+            ← Back to Push-to-Talk
           </button>
-          <h1 className="text-2xl font-bold">Live Transkribering</h1>
+          <h1 className="text-2xl font-bold">Live Transcription</h1>
           <div className="w-32" /> {/* Spacer for centering */}
         </div>
 
@@ -186,7 +185,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
               health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'
             }`} />
             <span>
-              Whisper: {health?.whisper_connected ? 'Ansluten' : 'Kopplad'}
+              Whisper: {health?.whisper_connected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
         </div>
@@ -202,7 +201,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
                 transition-all duration-200 shadow-lg
               "
             >
-              <span className="text-lg font-semibold">Spela in</span>
+              <span className="text-lg font-semibold">Record</span>
             </button>
           ) : (
             <button
@@ -214,7 +213,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
               "
             >
               <span className="absolute inset-0 rounded-full animate-pulse border-4 border-red-500" />
-              <span className="text-lg font-semibold">Stoppa</span>
+              <span className="text-lg font-semibold">Stop</span>
             </button>
           )}
         </div>
@@ -224,7 +223,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
           <div className="text-center mb-4">
             <span className="inline-flex items-center gap-2 text-red-400">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              Inspekar... ({isProcessing ? 'Skickar & bearbetar...' : 'Samlar in ljud'})
+              Recording... ({isProcessing ? 'Sending & processing...' : 'Collecting audio'})
             </span>
           </div>
         )}
@@ -245,20 +244,20 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
                 onClick={copyToClipboard}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm transition-colors"
               >
-                Kopiera text
+                Copy text
               </button>
               <button
                 onClick={clearText}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
               >
-                Rensa
+                Clear
               </button>
             </div>
 
             {/* Final text (when recording stops) */}
             {finalText && (
               <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-4">
-                <h3 className="text-sm text-gray-400 mb-2">Slutgiltig transkribering:</h3>
+                <h3 className="text-sm text-gray-400 mb-2">Final transcription:</h3>
                 <p className="text-lg leading-relaxed">{finalText}</p>
               </div>
             )}
@@ -267,7 +266,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
             <div className="bg-blue-900/20 rounded-lg p-6 border border-blue-700">
               <h3 className="text-sm text-blue-400 mb-2 flex items-center gap-2">
                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                Live (uppdateras medan du pratar):
+                Live (updates while you speak):
               </h3>
               <textarea
                 readOnly
@@ -281,12 +280,12 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
 
         {/* Instructions */}
         <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-          <h3 className="font-semibold mb-2">Instruktioner:</h3>
+          <h3 className="font-semibold mb-2">Instructions:</h3>
           <ul className="text-sm text-gray-400 space-y-1">
-            <li>• Klicka "Spela in" för att börja transkribera</li>
-            <li>• Texten uppdateras automatiskt var 5:e sekund medan du pratar</li>
-            <li>• Klicka "Stoppa" när du är klar</li>
-            <li>• Kopiera texten eller rensa för nytt</li>
+            <li>• Click "Record" to start transcribing</li>
+            <li>• Text updates automatically every 5 seconds while you speak</li>
+            <li>• Click "Stop" when you're done</li>
+            <li>• Copy the text or clear for new</li>
           </ul>
         </div>
       </div>

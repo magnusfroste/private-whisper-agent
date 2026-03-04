@@ -170,16 +170,16 @@ function App() {
             <div className="text-center">
               <div className="inline-flex items-center gap-2 bg-blue-900/30 border border-blue-700 rounded-full px-4 py-2 mb-6">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-sm text-blue-300">100% Privat & Säker</span>
+                <span className="text-sm text-blue-300">100% Private & Secure</span>
               </div>
 
               <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Privat Ljudtranskribering
+                Private Audio Transcription
               </h1>
 
               <p className="text-xl md:text-2xl text-gray-400 mb-8 max-w-3xl mx-auto">
-                Transkribera tal till text lokalt utan att skicka dina ljud till molnet.
-                Full kontroll över dina data – ingen sparning, ingen delning.
+                Transcribe speech to text locally without sending your audio to the cloud.
+                Full control over your data – no sharing, no tracking.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
@@ -187,7 +187,7 @@ function App() {
                   onClick={() => setView('push')}
                   className="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold text-lg transition-all shadow-lg shadow-blue-600/25"
                 >
-                  Kom igång nu
+                  Get Started
                 </button>
                 <a
                   href="https://www.privai.se"
@@ -195,7 +195,7 @@ function App() {
                   rel="noopener noreferrer"
                   className="px-8 py-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg font-semibold text-lg transition-all"
                 >
-                  Läs mer om PRIVAI →
+                  Learn about PRIVAI →
                 </a>
               </div>
             </div>
@@ -207,25 +207,25 @@ function App() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
               <div className="text-4xl mb-4">🔒</div>
-              <h3 className="text-xl font-semibold mb-2">100% Privat</h3>
+              <h3 className="text-xl font-semibold mb-2">100% Private</h3>
               <p className="text-gray-400">
-                Alla ljudbearbetningar sker lokalt. Dina samtal delas aldrig med någon tredje part.
+                All audio processing happens locally. Your conversations are never shared with third parties.
               </p>
             </div>
 
             <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
               <div className="text-4xl mb-4">⚡</div>
-              <h3 className="text-xl font-semibold mb-2">Snabbt</h3>
+              <h3 className="text-xl font-semibold mb-2">Fast</h3>
               <p className="text-gray-400">
-                Minimal latens tack vare optimerad Whisper-modell och lokal bearbetning.
+                Minimal latency thanks to optimized Whisper model and local processing.
               </p>
             </div>
 
             <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
               <div className="text-4xl mb-4">🎯</div>
-              <h3 className="text-xl font-semibold mb-2">Hög Noggrannhet</h3>
+              <h3 className="text-xl font-semibold mb-2">High Accuracy</h3>
               <p className="text-gray-400">
-                OpenAI:s Whisper-large-v3 ger exceptionellt bra transkribering på svenska.
+                OpenAI's Whisper-large-v3 delivers exceptional transcription quality in Swedish and English.
               </p>
             </div>
           </div>
@@ -233,7 +233,7 @@ function App() {
 
         {/* How It Works */}
         <div className="max-w-6xl mx-auto px-4 py-20">
-          <h2 className="text-3xl font-bold text-center mb-12">Så Fungerar Det</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
 
           <div className="space-y-8">
             <div className="flex flex-col md:flex-row gap-6 items-center">
@@ -241,9 +241,9 @@ function App() {
                 1
               </div>
               <div className="flex-grow">
-                <h3 className="text-xl font-semibold mb-2">Håll inne mikrofonknappen</h3>
+                <h3 className="text-xl font-semibold mb-2">Hold the microphone button</h3>
                 <p className="text-gray-400">
-                  Tryck och håll inne den stora knappen medan du pratar. Släpp för att transkribera.
+                  Press and hold the big button while speaking. Release to transcribe.
                 </p>
               </div>
             </div>
@@ -253,9 +253,9 @@ function App() {
                 2
               </div>
               <div className="flex-grow">
-                <h3 className="text-xl font-semibold mb-2">Se resultatet direkt</h3>
+                <h3 className="text-xl font-semibold mb-2">See results instantly</h3>
                 <p className="text-gray-400">
-                  Texten visas omedelbart med information om bearbetningstid.
+                  Text appears immediately with processing time information.
                 </p>
               </div>
             </div>
@@ -265,9 +265,9 @@ function App() {
                 3
               </div>
               <div className="flex-grow">
-                <h3 className="text-xl font-semibold mb-2">Kopiera eller spara</h3>
+                <h3 className="text-xl font-semibold mb-2">Copy or save</h3>
                 <p className="text-gray-400">
-                  Kopiera transkriberingen till urklipp eller titta på historik.
+                  Copy transcription to clipboard or view in history.
                 </p>
               </div>
             </div>
@@ -276,15 +276,15 @@ function App() {
 
         {/* CTA Section */}
         <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-          <h2 className="text-3xl font-bold mb-6">Redo att börja?</h2>
+          <h2 className="text-3xl font-bold mb-6">Ready to Start?</h2>
           <p className="text-xl text-gray-400 mb-8">
-            Testa vår privata ljudtranskribering idag – helt gratis och utan registrering.
+            Try our private audio transcription today – completely free and no registration required.
           </p>
           <button
             onClick={() => setView('push')}
             className="px-10 py-5 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold text-xl transition-all shadow-lg shadow-blue-600/25"
           >
-            Börja Transkribera
+            Start Transcribing
           </button>
         </div>
 
@@ -293,7 +293,7 @@ function App() {
           <div className="max-w-6xl mx-auto px-4 py-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-gray-500 text-sm">
-                Driven av <a href="https://www.autoversio.ai" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors">Autoversio</a>
+                Powered by <a href="https://www.autoversio.ai" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors">Autoversio</a>
               </p>
               <div className="flex gap-6">
                 <a
@@ -324,7 +324,7 @@ function App() {
     <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-8">
-          Välkommen till Privat Transkribering
+          Welcome to Private Transcription
         </h1>
 
         {/* View Switcher */}
@@ -339,7 +339,7 @@ function App() {
             onClick={() => setView('live')}
             className="px-6 py-2 rounded-lg font-semibold transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
           >
-            Live Transkribering
+            Live Transcription
           </button>
           <button
             onClick={() => setView('realtime')}
@@ -361,7 +361,7 @@ function App() {
                 health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'
               }`} />
               <span className="font-semibold">
-                Whisper: {health?.whisper_connected ? 'Ansluten' : 'Kopplad'}
+                Whisper: {health?.whisper_connected ? 'Connected' : 'Disconnected'}
               </span>
             </div>
             <button
@@ -369,12 +369,12 @@ function App() {
               disabled={checkingHealth}
               className="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded disabled:opacity-50"
             >
-              {checkingHealth ? 'Kontrollerar...' : 'Uppdatera'}
+              {checkingHealth ? 'Checking...' : 'Refresh'}
             </button>
           </div>
           {health?.whisper_latency_ms && (
             <p className="text-sm text-gray-400 mt-2">
-              Latens till Whisper: {health.whisper_latency_ms}ms
+              Latency to Whisper: {health.whisper_latency_ms}ms
             </p>
           )}
           {health?.error && (
@@ -402,7 +402,7 @@ function App() {
               <span className="absolute inset-0 rounded-full animate-pulse-ring border-4 border-red-500" />
             )}
             <span className="text-lg font-semibold">
-              {isRecording ? 'Släpp' : 'Håll inne'}
+              {isRecording ? 'Release' : 'Hold'}
             </span>
           </button>
         </div>
@@ -417,14 +417,14 @@ function App() {
           <div className={`rounded-lg p-6 mb-6 border ${getLatencyBgColor(currentLatency || 0)}`}>
             <p className="text-xl mb-4">{currentResult}</p>
             <p className={`text-sm font-mono ${getLatencyColor(currentLatency || 0)}`}>
-              Latens: {currentLatency}ms
+              Latency: {currentLatency}ms
             </p>
           </div>
         )}
 
         {history.length > 0 && (
           <div className="space-y-2">
-            <h2 className="text-lg font-semibold mb-4">Historik</h2>
+            <h2 className="text-lg font-semibold mb-4">History</h2>
             {history.map((item, index) => (
               <div
                 key={index}
