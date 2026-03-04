@@ -48,6 +48,11 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
     }
   }, [liveText])
 
+  // Log isProcessing changes
+  useEffect(() => {
+    console.log('[Live] isProcessing:', isProcessing)
+  }, [isProcessing])
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
