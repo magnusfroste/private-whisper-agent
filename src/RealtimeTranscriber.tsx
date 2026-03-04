@@ -49,7 +49,7 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: 'audio/webm'
       })
 
       chunksRef.current = []
