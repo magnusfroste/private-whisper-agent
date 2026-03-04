@@ -21,7 +21,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const lastSendTimeRef = useRef<number>(0)
 
   const checkHealth = async () => {
     try {
@@ -39,9 +39,6 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
 
   useEffect(() => {
     checkHealth()
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
   }, [])
 
   const startRecording = async () => {
@@ -55,35 +52,40 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       setLiveText('')
       setFinalText('')
       setError(null)
+      lastSendTimeRef.current = 0
 
       // Collect chunks as they come in
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data)
           console.log('[Live] Chunk mottagen:', event.data.size, 'bytes')
+
+          // Send immediately if enough time has passed
+          const now = Date.now()
+          if (now - lastSendTimeRef.current > 2000) {
+            const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+            console.log('[Live] Skickar chunk direkt:', blob.size, 'bytes')
+            sendChunk(blob)
+            chunksRef.current = []
+            lastSendTimeRef.current = now
+          }
         }
       }
 
       mediaRecorder.onstop = () => {
         stream.getTracks().forEach(track => track.stop())
+        // Send any remaining chunks
+        if (chunksRef.current.length > 0) {
+          const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+          console.log('[Live] Skickar sista chunk:', blob.size, 'bytes')
+          sendChunk(blob)
+          chunksRef.current = []
+        }
       }
 
       mediaRecorderRef.current = mediaRecorder
-      // Start recording without timeslice - chunks arrive naturally
       mediaRecorder.start()
       setIsRecording(true)
-
-      // Send chunks every 3 seconds
-      intervalRef.current = setInterval(async () => {
-        if (chunksRef.current.length > 0) {
-          const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
-          console.log('[Live] Skickar chunk:', blob.size, 'bytes')
-          await sendChunk(blob)
-          chunksRef.current = [] // Clear after sending
-        } else {
-          console.log('[Live] Inga chunks att skicka')
-        }
-      }, 3000)
 
       console.log('[Live] Inspeking startad')
     } catch (err) {
@@ -94,10 +96,6 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
 
   const stopRecording = async () => {
     if (mediaRecorderRef.current && isRecording) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
       mediaRecorderRef.current.stop()
       setIsRecording(false)
       console.log('[Live] Inspeking stoppad')
