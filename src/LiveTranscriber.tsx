@@ -17,12 +17,11 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
   const [error, setError] = useState<string | null>(null)
   const [health, setHealth] = useState<HealthStatus | null>(null)
   const [finalText, setFinalText] = useState('')
+  const [liveText, setLiveText] = useState('') // State for real-time updates
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const lastSendTimeRef = useRef<number>(0)
-  const liveTextRef = useRef('')
-  const liveTextElementRef = useRef<HTMLTextAreaElement>(null)
 
   const checkHealth = async () => {
     try {
@@ -43,14 +42,6 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
   }, [])
 
   // Update DOM when liveTextRef changes and ref is ready
-  useEffect(() => {
-    if (liveTextElementRef.current && liveTextRef.current) {
-      liveTextElementRef.current.value = liveTextRef.current
-      console.log('[Live] DOM uppdaterad:', liveTextRef.current.substring(0, 50))
-    }
-  }, [liveTextRef.current])
-
-
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -59,7 +50,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       })
 
       chunksRef.current = []
-      liveTextRef.current = ''
+      setLiveText('')
       setFinalText('')
       setError(null)
       lastSendTimeRef.current = 0
@@ -141,14 +132,12 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       const data = await response.json()
       console.log('[Live] Transkribering:', data.text)
 
-      // Update live text ref and DOM directly
-      const newText = liveTextRef.current && !data.text.startsWith(liveTextRef.current)
-        ? liveTextRef.current + ' ' + data.text
+      // Update live text state for real-time updates
+      const newText = liveText && !data.text.startsWith(liveText)
+        ? liveText + ' ' + data.text
         : data.text
-      liveTextRef.current = newText
-
-      // Update text ref
-      liveTextRef.current = newText
+      setLiveText(newText)
+      console.log('[Live] setLiveText:', newText.substring(0, 50))
     } catch (err) {
       console.warn('[Live] Transkriberingsfel:', err)
       // Don't show error, just skip this chunk
@@ -158,16 +147,13 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
   }
 
   const copyToClipboard = () => {
-    const textToCopy = finalText || liveTextRef.current
+    const textToCopy = finalText || liveText
     navigator.clipboard.writeText(textToCopy)
     alert('Text kopierad till urklipp!')
   }
 
   const clearText = () => {
-    liveTextRef.current = ''
-    if (liveTextElementRef.current) {
-      liveTextElementRef.current.textContent = ''
-    }
+    setLiveText('')
     setFinalText('')
   }
 
@@ -248,7 +234,7 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
         )}
 
         {/* Live transcription display */}
-        {(liveTextRef.current || finalText) && (
+        {(liveText || finalText) && (
           <div className="mb-6">
             {/* Action buttons */}
             <div className="flex gap-2 mb-3">
@@ -281,11 +267,10 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
                 Live (uppdateras medan du pratar):
               </h3>
               <textarea
-                ref={liveTextElementRef}
                 readOnly
                 className="w-full bg-transparent text-lg leading-relaxed text-white resize-none outline-none"
                 rows={3}
-                value={liveTextRef.current}
+                value={liveText}
               />
             </div>
           </div>
