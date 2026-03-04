@@ -70,12 +70,16 @@ app.post('/api/transcribe', upload.single('file'), async (req: MulterRequest, re
 app.get('/api/health', async (req: express.Request, res: express.Response) => {
   console.log('[Health] Checkar Whisper anslutning:', WHISPER_URL)
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
   try {
     const startTime = Date.now()
     const response = await fetch(`${WHISPER_URL}/v1/models`, {
       method: 'GET',
-      timeout: 5000
+      signal: controller.signal
     })
+    clearTimeout(timeoutId)
     const duration = Date.now() - startTime
 
     if (response.ok) {
@@ -98,6 +102,7 @@ app.get('/api/health', async (req: express.Request, res: express.Response) => {
       })
     }
   } catch (error) {
+    clearTimeout(timeoutId)
     console.error('[Health] KUNDE INTE nå Whisper:', error instanceof Error ? error.message : error)
     return res.status(503).json({
       status: 'unhealthy',
