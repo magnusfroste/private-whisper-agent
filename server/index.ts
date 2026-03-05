@@ -225,6 +225,8 @@ app.get('/api/health', async (req: express.Request, res: express.Response) => {
 
   res.json({
     status: whisperOk && ultravoxOk ? 'healthy' : 'degraded',
+    whisper_connected: whisperOk,
+    ultravox_connected: ultravoxOk,
     whisper: { url: WHISPER_URL, connected: whisperOk },
     ultravox: { url: ULTRAVOX_URL, connected: ultravoxOk }
   })
