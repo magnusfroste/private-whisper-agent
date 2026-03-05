@@ -240,7 +240,7 @@ function App() {
 
           <nav className="space-y-1.5">
             <NavItem id="chat" label="Intelligence" icon={LayoutDashboard} />
-            <NavItem id="live" label="Live Stream" icon={Waves} />
+            <NavItem id="live" label="Transcribe" icon={Waves} />
             <NavItem id="realtime" label="Realtime WS" icon={History} />
           </nav>
 
@@ -412,7 +412,14 @@ function App() {
             </div>
           )}
 
-          {view === 'live' && <LiveTranscriber onBack={() => setView('chat')} />}
+          {view === 'live' && (
+            <LiveTranscriber
+              onSendToChat={(text: string) => {
+                setView('chat');
+                sendMessage(text);
+              }}
+            />
+          )}
           {view === 'realtime' && <RealtimeTranscriber onBack={() => setView('chat')} />}
         </div>
       </main>

@@ -1,7 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
+import {
+  Mic,
+  Trash2,
+  Copy,
+  X,
+  Plus,
+  Waves,
+  MessageSquare
+} from 'lucide-react'
 
 interface LiveTranscriberProps {
-  onBack: () => void
+  onBack?: () => void
+  onSendToChat?: (text: string) => void
 }
 
 interface HealthStatus {
@@ -11,13 +21,13 @@ interface HealthStatus {
   error?: string
 }
 
-export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
+export default function LiveTranscriber({ onSendToChat }: LiveTranscriberProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [health, setHealth] = useState<HealthStatus | null>(null)
   const [finalText, setFinalText] = useState('')
-  const [liveText, setLiveText] = useState('') // State for real-time updates
+  const [liveText, setLiveText] = useState('')
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -41,6 +51,20 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
     checkHealth()
   }, [])
 
+  // Handle Spacebar toggle
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault()
+        if (isRecording) stopRecording()
+        else startRecording()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isRecording])
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -53,20 +77,16 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       setFinalText('')
       setError(null)
 
-      // Collect chunks as they come in
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data)
-          console.log('[Live] Chunk received:', event.data.size, 'bytes')
         }
       }
 
       mediaRecorder.onstop = () => {
         stream.getTracks().forEach(track => track.stop())
-        // Send final state
         if (chunksRef.current.length > 0) {
           const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
-          console.log('[Live] Sending final chunk:', blob.size, 'bytes')
           sendChunk(blob).then((text) => setFinalText(text || liveText))
         }
         setIsRecording(false)
@@ -76,22 +96,15 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       mediaRecorder.start()
       setIsRecording(true)
 
-      // Send accumulated chunks every 3 seconds for better real-time feel
       intervalRef.current = setInterval(async () => {
         if (chunksRef.current.length > 0) {
           const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
-          console.log('[Live] Sending accumulated chunks:', blob.size, 'bytes')
           await sendChunk(blob)
-          // We DO NOT clear chunksRef.current = [] here!
-          // We must send the whole accumulated recording each time so that it includes the valid WebM header
-          // and so Whisper can use the full context to fix mistakes continuously.
         }
       }, 3000)
 
-      console.log('[Live] Recording started')
     } catch (err) {
       setError('Could not access microphone.')
-      console.error('Microphone error:', err)
     }
   }
 
@@ -103,66 +116,31 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
       }
       mediaRecorderRef.current.stop()
       setIsRecording(false)
-      console.log('[Live] Recording stopped')
     }
   }
 
-  // Handle Spacebar toggle
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.code === 'Space' && !e.repeat) {
-        e.preventDefault()
-        if (isRecording) {
-          stopRecording()
-        } else {
-          startRecording()
-        }
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isRecording])
-
   const sendChunk = async (blobData: Blob) => {
-    console.log('[Live] sendChunk started, blob size:', blobData.size)
-    // Skip if already processing to avoid queue buildup
-    if (isProcessing) {
-      console.log('[Live] Skipping chunk - already processing')
-      return
-    }
-
+    if (isProcessing) return
     setIsProcessing(true)
     const formData = new FormData()
     formData.append('file', blobData, 'recording.webm')
-    console.log('[Live] FormData created')
 
     try {
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData
       })
-
       if (!response.ok) {
-        console.warn('[Live] Transcription failed:', response.status)
-        // Don't show error, just skip this chunk
         setIsProcessing(false)
         return
       }
-
       const data = await response.json()
-      console.log('[Live] Transcription:', data.text)
-
-      // Because we send the full audio from the start every time,
-      // Whisper will transcribe the entire thing again. We can just replace the text.
       if (data.text) {
         setLiveText(data.text)
-        console.log('[Live] setLiveText:', data.text.substring(0, 50))
         return data.text
       }
     } catch (err) {
-      console.warn('[Live] Transcription error:', err)
-      // Don't show error, just skip this chunk
+      console.warn('[Transcribe] Error:', err)
     } finally {
       setIsProcessing(false)
     }
@@ -171,7 +149,13 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
   const copyToClipboard = () => {
     const textToCopy = finalText || liveText
     navigator.clipboard.writeText(textToCopy)
-    alert('Text copied to clipboard!')
+  }
+
+  const handleSendToChat = () => {
+    const textToSend = finalText || liveText
+    if (textToSend && onSendToChat) {
+      onSendToChat(textToSend)
+    }
   }
 
   const clearText = () => {
@@ -180,123 +164,119 @@ export default function LiveTranscriber({ onBack }: LiveTranscriberProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-          >
-            ← Back to Push-to-Talk
-          </button>
-          <h1 className="text-2xl font-bold">Live Transcription</h1>
-          <div className="w-32" /> {/* Spacer for centering */}
+    <div className="flex-1 flex flex-col bg-black text-white h-full overflow-hidden">
+      {/* Header */}
+      <header className="flex items-center justify-between px-8 py-6 glass-header sticky top-0 z-10">
+        <div className="flex items-center gap-4">
+          <Waves className="w-6 h-6 text-blue-500" />
+          <h2 className="text-xl font-black tracking-tight uppercase tracking-tighter">Transcribe</h2>
         </div>
-
-        {/* Health Status */}
-        <div className={`rounded-lg p-3 mb-6 border text-sm ${health?.whisper_connected
-          ? 'bg-green-900/30 border-green-700'
-          : 'bg-red-900/30 border-red-700'
-          }`}>
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'
-              }`} />
-            <span>
-              Whisper: {health?.whisper_connected ? 'Connected' : 'Disconnected'}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#161616] border border-gray-800 rounded-full">
+            <div className={`w-1.5 h-1.5 rounded-full ${health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              Whisper {health?.whisper_connected ? 'Live' : 'Offline'}
             </span>
           </div>
-        </div>
-
-        {/* Recording Controls */}
-        <div className="flex justify-center mb-8">
-          <button
-            onClick={isRecording ? stopRecording : startRecording}
-            className={`
-                relative w-32 h-32 rounded-full flex items-center justify-center
-                transition-all duration-200 shadow-lg
-                ${isRecording ? 'bg-red-600 hover:bg-red-500' : 'bg-green-600 hover:bg-green-500'}
-              `}
-          >
-            {isRecording && <span className="absolute inset-0 rounded-full animate-pulse border-4 border-red-500" />}
-            <span className="text-lg font-semibold">{isRecording ? 'Stop' : 'Record'}</span>
+          <button onClick={clearText} className="p-2 text-gray-500 hover:text-red-400 transition-colors">
+            <Trash2 className="w-5 h-5" />
           </button>
         </div>
-        <p className="text-center text-gray-500 text-sm mb-8">
-          Press <kbd className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs font-mono">Space</kbd> to toggle recording
-        </p>
+      </header>
 
-        {/* Status indicator */}
-        {isRecording && (
-          <div className="text-center mb-4">
-            <span className="inline-flex items-center gap-2 text-red-400">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              Recording... ({isProcessing ? 'Sending & processing...' : 'Collecting audio'})
-            </span>
+      {/* Content */}
+      <main className="flex-1 overflow-y-auto custom-scrollbar px-6 sm:px-20 py-10">
+        <div className="max-w-4xl mx-auto space-y-10">
+
+          {/* Audio Visualizer Placeholder / Pulsing Circle */}
+          <div className="flex flex-col items-center justify-center py-10">
+            <button
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`
+                 w-40 h-40 rounded-full flex flex-col items-center justify-center transition-all duration-500 relative
+                 ${isRecording
+                  ? 'bg-red-500 shadow-[0_0_50px_rgba(239,68,68,0.3)] animate-pulse'
+                  : 'bg-[#1d9bf0] shadow-[0_0_30px_rgba(29,155,240,0.1)] hover:scale-105'
+                }
+               `}
+            >
+              {isRecording ? (
+                <>
+                  <X className="w-10 h-10 mb-2" />
+                  <span className="text-xs font-black uppercase tracking-widest">Stop</span>
+                </>
+              ) : (
+                <>
+                  <Mic className="w-10 h-10 mb-2" />
+                  <span className="text-xs font-black uppercase tracking-widest">Start</span>
+                </>
+              )}
+              {isRecording && (
+                <span className="absolute -inset-4 rounded-full border-2 border-red-500/20 animate-ping" />
+              )}
+            </button>
+            <p className="mt-8 text-gray-500 text-[11px] font-bold uppercase tracking-[0.2em]">
+              Press <kbd className="px-2 py-1 bg-[#161616] border border-gray-800 rounded mx-1 text-white">Space</kbd> to toggle capture
+            </p>
           </div>
-        )}
 
-        {/* Error message */}
-        {error && (
-          <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6 text-center">
-            {error}
-          </div>
-        )}
+          {/* Results Area */}
+          {(liveText || finalText) && (
+            <div className="space-y-6 animate-slide-up">
+              <div className="bg-[#0b0b0b] border border-gray-800 rounded-[2.5rem] p-8 sm:p-12 relative overflow-hidden group">
+                {/* Decorative background glow */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl -mr-16 -mt-16 pointer-events-none" />
 
-        {/* Live transcription display */}
-        {(liveText || finalText) && (
-          <div className="mb-6">
-            {/* Action buttons */}
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={copyToClipboard}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm transition-colors"
-              >
-                Copy text
-              </button>
-              <button
-                onClick={clearText}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
-              >
-                Clear
-              </button>
-            </div>
+                <div className="flex items-center justify-between mb-6">
+                  <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Generated Transcript</span>
+                  {isProcessing && (
+                    <span className="flex items-center gap-2 text-blue-500 text-[10px] font-black uppercase">
+                      <Plus className="w-3 h-3 animate-spin" /> Processing
+                    </span>
+                  )}
+                </div>
 
-            {/* Final text (when recording stops) */}
-            {finalText && (
-              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-4">
-                <h3 className="text-sm text-gray-400 mb-2">Final transcription:</h3>
-                <p className="text-lg leading-relaxed">{finalText}</p>
+                <p className={`text-xl sm:text-2xl leading-relaxed font-medium transition-all ${isRecording ? 'text-gray-100' : 'text-white'}`}>
+                  {finalText || liveText}
+                  {isRecording && <span className="inline-block w-1 h-6 bg-blue-500 ml-1 animate-pulse align-middle" />}
+                </p>
+
+                <div className="mt-12 flex flex-wrap gap-3">
+                  <button
+                    onClick={copyToClipboard}
+                    className="flex items-center gap-2 px-6 py-3 bg-[#161616] hover:bg-gray-800 border border-gray-800 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:translate-y-[-2px]"
+                  >
+                    <Copy className="w-4 h-4" /> Copy Text
+                  </button>
+                  <button
+                    onClick={handleSendToChat}
+                    className="flex items-center gap-2 px-6 py-3 bg-white text-black hover:bg-gray-200 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:translate-y-[-2px] shadow-xl"
+                  >
+                    <MessageSquare className="w-4 h-4" /> Send to Chat
+                  </button>
+                </div>
               </div>
-            )}
-
-            {/* Live text (while recording) */}
-            <div className="bg-blue-900/20 rounded-lg p-6 border border-blue-700">
-              <h3 className="text-sm text-blue-400 mb-2 flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                Live (updates while you speak):
-              </h3>
-              <textarea
-                readOnly
-                className="w-full bg-transparent text-lg leading-relaxed text-white resize-none outline-none"
-                rows={3}
-                value={liveText}
-              />
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Instructions */}
-        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-          <h3 className="font-semibold mb-2">Instructions:</h3>
-          <ul className="text-sm text-gray-400 space-y-1">
-            <li>• Click "Record" to start transcribing</li>
-            <li>• Text updates automatically every 5 seconds while you speak</li>
-            <li>• Click "Stop" when you're done</li>
-            <li>• Copy the text or clear for new</li>
-          </ul>
+          {!(liveText || finalText) && (
+            <div className="text-center py-20">
+              <div className="w-16 h-16 bg-[#161616] border border-gray-800 rounded-3xl flex items-center justify-center mx-auto mb-6 text-gray-500">
+                <Waves className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-400">Ready to transcribe</h3>
+              <p className="text-gray-600 text-sm max-w-xs mx-auto mt-2">Start talking to see your speech converted to text in high-fidelity.</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-6 rounded-[2rem] text-center animate-slide-up">
+              {error}
+            </div>
+          )}
+
         </div>
-      </div>
+      </main>
     </div>
   )
 }
