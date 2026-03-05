@@ -73,7 +73,7 @@ const PERSONALITIES: Record<PersonalityType, { name: string, prompt: string | nu
 
 const WELCOME_MESSAGE: Message = {
   role: 'assistant',
-  content: 'I am your Autoversio intelligence. Everything you say stays on your own server. My neural weights are open-source, and your data never leaves this node.\n\nHow can I help you explore today?',
+  content: 'I am your Intelligence Agent. Everything you say stays on your own server. My neural weights are open-source, and your data never leaves this node.\n\nHow can I help you explore today?',
   timestamp: new Date().toLocaleTimeString()
 }
 
@@ -290,7 +290,7 @@ function App() {
           </div>
 
           <nav className="space-y-1.5 w-full">
-            <NavItem id="chat" label="Intelligence" icon={LayoutDashboard} />
+            <NavItem id="chat" label="Intelligence Agent" icon={LayoutDashboard} />
             <NavItem id="live" label="Transcribe" icon={Waves} />
             <NavItem id="realtime" label="Realtime WS" icon={History} />
           </nav>
@@ -357,7 +357,7 @@ function App() {
                   >
                     {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
                   </button>
-                  <h2 className="text-xl font-black tracking-tight uppercase ml-2">Autoversio Intelligence</h2>
+                  <h2 className="text-xl font-black tracking-tight uppercase ml-2">Intelligence Agent</h2>
                 </div>
 
                 {/* Personality Selector */}
@@ -403,26 +403,21 @@ function App() {
               <div className="flex-1 overflow-y-auto custom-scrollbar px-6 sm:px-20 py-10 space-y-12">
                 {messages.map((msg, i) => (
                   <div key={i} className={`flex w-full group animate-slide-up ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`flex gap-4 max-w-[90%] sm:max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                      <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center font-bold text-xs ${msg.role === 'user' ? 'bg-blue-500' : 'bg-white text-black font-black'}`}>
-                        {msg.role === 'user' ? 'U' : 'X'}
+                    <div className={`flex flex-col gap-1 max-w-[90%] sm:max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div className={`text-[10px] text-gray-600 font-black uppercase tracking-widest px-1`}>
+                        {msg.role === 'assistant' ? 'Agent' : 'User'} — {msg.timestamp}
                       </div>
-                      <div className={`space-y-1 ${msg.role === 'user' ? 'text-right' : ''}`}>
-                        <div className={`text-[10px] text-gray-600 font-black uppercase tracking-widest px-1`}>
-                          {msg.role === 'assistant' ? 'Autoversio Intelligence' : 'You'} — {msg.timestamp}
-                        </div>
-                        <div className={`
-                            px-5 py-3.5 text-[15.5px] leading-relaxed tracking-tight
-                            ${msg.role === 'user'
-                            ? 'bg-[#1d9bf0] text-white rounded-3xl rounded-tr-none'
-                            : 'bg-transparent text-gray-100 prose prose-invert max-w-none'
-                          }
-                         `}>
-                          {msg.role === 'assistant'
-                            ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                            : msg.content
-                          }
-                        </div>
+                      <div className={`
+                          px-5 py-3.5 text-[15.5px] leading-relaxed tracking-tight
+                          ${msg.role === 'user'
+                          ? 'bg-[#1d9bf0] text-white rounded-3xl rounded-tr-none'
+                          : 'bg-transparent text-gray-100 prose prose-invert max-w-none'
+                        }
+                       `}>
+                        {msg.role === 'assistant'
+                          ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                          : msg.content
+                        }
                       </div>
                     </div>
                   </div>
