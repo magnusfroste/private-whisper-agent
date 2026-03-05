@@ -146,6 +146,12 @@ function App() {
 
     const startTime = performance.now()
     const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+
+    // Ignore empty/tiny recordings (110 bytes is just WebM header)
+    if (blob.size < 500) {
+      console.log('Recording too short, ignoring. Size:', blob.size)
+      return
+    }
     const formData = new FormData()
     formData.append('file', blob, 'recording.webm')
     // Send language preference to backend

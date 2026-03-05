@@ -113,6 +113,10 @@ function Chat({ onBack }: { onBack: () => void }) {
     if (chunksRef.current.length === 0) return
 
     const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+    if (blob.size < 500) {
+      console.log('Recording too short, ignoring. Size:', blob.size)
+      return
+    }
     const formData = new FormData()
     formData.append('file', blob, 'recording.webm')
 
