@@ -42,7 +42,7 @@ type ViewType = 'chat' | 'live' | 'realtime' | 'landing'
 
 const WELCOME_MESSAGE: Message = {
   role: 'assistant',
-  content: 'I am your private intelligence. Everything you say stays on your own server. My neural weights are open-source, and your data never leaves this node.\n\nHow can I help you explore today?',
+  content: 'I am your Autoversio intelligence. Everything you say stays on your own server. My neural weights are open-source, and your data never leaves this node.\n\nHow can I help you explore today?',
   timestamp: new Date().toLocaleTimeString()
 }
 
@@ -233,13 +233,13 @@ function App() {
       <aside className={`flex flex-col border-r border-gray-800 transition-all duration-300 bg-black z-30 ${sidebarOpen ? 'w-64 sm:w-72' : 'w-[72px]'}`}>
         <div className={`flex flex-col h-full ${sidebarOpen ? 'p-6' : 'p-3 items-center overflow-hidden'}`}>
           <div className={`flex items-center gap-3 mb-10 ${sidebarOpen ? '' : 'justify-center'}`}>
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-black font-black text-xl flex-shrink-0">
-              X
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
+              <img src="/logo.png" alt="Autoversio Logo" className="w-full h-full object-contain" />
             </div>
             {sidebarOpen && (
               <div className="flex flex-col overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-2 transition-all">
-                <span className="font-black tracking-tighter text-xl">PrivateAI</span>
-                <span className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-[-4px]">Whisper Mode</span>
+                <span className="font-black tracking-tighter text-xl">Autoversio</span>
+                <span className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-[-4px]">Intelligence Node</span>
               </div>
             )}
           </div>
@@ -312,7 +312,7 @@ function App() {
                   >
                     {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
                   </button>
-                  <h2 className="text-xl font-black tracking-tight uppercase ml-2">Private AI Chat</h2>
+                  <h2 className="text-xl font-black tracking-tight uppercase ml-2">Autoversio Intelligence</h2>
                 </div>
                 <div className="flex items-center gap-3">
                   <button onClick={() => setMessages([WELCOME_MESSAGE])} className="p-2 text-gray-500 hover:text-red-400 transition-colors"><Trash2 className="w-5 h-5" /></button>
@@ -330,7 +330,7 @@ function App() {
                       </div>
                       <div className={`space-y-1 ${msg.role === 'user' ? 'text-right' : ''}`}>
                         <div className={`text-[10px] text-gray-600 font-black uppercase tracking-widest px-1`}>
-                          {msg.role === 'assistant' ? 'Private Intelligence' : 'You'} — {msg.timestamp}
+                          {msg.role === 'assistant' ? 'Autoversio Intelligence' : 'You'} — {msg.timestamp}
                         </div>
                         <div className={`
                             px-5 py-3.5 text-[15.5px] leading-relaxed tracking-tight
@@ -377,7 +377,7 @@ function App() {
                     <textarea
                       ref={inputRef}
                       className="flex-1 bg-transparent border-none outline-none py-3 text-[16px] resize-none max-h-48 overflow-y-auto text-white placeholder-gray-600 font-medium"
-                      placeholder="Ask PrivateAI anything..."
+                      placeholder="Ask Autoversio anything..."
                       rows={1}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
