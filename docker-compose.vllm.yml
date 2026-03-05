@@ -34,8 +34,6 @@ services:
       - VLLM_SLEEP_WHEN_IDLE=1
       - VLLM_ATTENTION_BACKEND=FLASHINFER
       - VLLM_LOGGING_LEVEL=INFO
-      - NVIDIA_VISIBLE_DEVICES=0
-      - CUDA_VISIBLE_DEVICES=0
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     ports:
       - "8001:8000"
@@ -61,8 +59,6 @@ services:
       - HUGGINGFACE_TOKEN=${HF_TOKEN:-}
       - HF_TOKEN=${HF_TOKEN:-}
       - CUDA_DEVICE_ORDER=PCI_BUS_ID
-      - NVIDIA_VISIBLE_DEVICES=1
-      - CUDA_VISIBLE_DEVICES=1
     ports:
       - "8002:8000"
     ipc: host
