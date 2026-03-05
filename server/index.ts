@@ -297,7 +297,7 @@ app.post('/api/chat/native', upload.single('file'), async (req: MulterRequest, r
       }
 
       content.push({
-        type: 'audio',
+        type: 'input_audio',
         input_audio: {
           data: (finalBuffer as Buffer).toString('base64'),
           format: 'wav'
