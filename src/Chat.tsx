@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Mic, Square, Send, Settings, Trash2, ArrowLeft } from 'lucide-react'
+import { Mic, Send, Settings, Trash2, ArrowLeft } from 'lucide-react'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -53,6 +53,7 @@ function Chat({ onBack }: { onBack: () => void }) {
   })
   const [showConfig, setShowConfig] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
 
@@ -240,150 +241,140 @@ function Chat({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4 shadow-sm z-10">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onBack}
-              className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Back</span>
-            </button>
-            <h1 className="text-xl font-bold">Privat Chat</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowConfig(!showConfig)}
-              className={`p-2 rounded transition-colors ${showConfig ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
-              title="Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-            <button
-              onClick={clearChat}
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-              title="Clear chat"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
+    <div className="flex flex-col h-screen bg-[#000000] text-gray-100 font-sans selection:bg-blue-500/30">
+      {/* Search Header Style */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-800/60 bg-[#000000]/80 backdrop-blur-md sticky top-0 z-20">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="p-2 -ml-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-full transition-all"
+            title="Back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-bold tracking-tight">Private Chat</h1>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Secure Node</span>
+            </div>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowConfig(!showConfig)}
+            className={`p-2 rounded-full transition-all ${showConfig ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          <button
+            onClick={clearChat}
+            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-full transition-all"
+            title="Clear chat"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
 
-        {/* Config Panel */}
+      <main className="flex-1 overflow-y-auto custom-scrollbar">
         {showConfig && (
-          <div className="max-w-4xl mx-auto mt-4 p-4 bg-gray-700/50 rounded-lg">
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">API URL</label>
-                <input
-                  type="text"
-                  value={config.apiUrl}
-                  onChange={(e) => setConfig(prev => ({ ...prev, apiUrl: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                  placeholder="http://192.168.68.107:8000/v1"
-                />
+          <div className="max-w-3xl mx-auto mt-4 px-4">
+            <div className="bg-[#0b0b0b] border border-gray-800 rounded-2xl p-6 shadow-2xl">
+              <h2 className="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">Model Configuration</h2>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-500 ml-1">API Endpoint</label>
+                    <input
+                      type="text"
+                      className="w-full bg-[#161616] border border-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 rounded-xl px-4 py-2.5 outline-none transition-all"
+                      value={config.apiUrl}
+                      onChange={(e) => setConfig({ ...config, apiUrl: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-500 ml-1">Model ID</label>
+                    <input
+                      type="text"
+                      className="w-full bg-[#161616] border border-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 rounded-xl px-4 py-2.5 outline-none transition-all"
+                      value={config.modelName}
+                      onChange={(e) => setConfig({ ...config, modelName: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Model Name</label>
-                <input
-                  type="text"
-                  value={config.modelName}
-                  onChange={(e) => setConfig(prev => ({ ...prev, modelName: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                  placeholder="qwen35-35-fp8"
-                />
-              </div>
+              <p className="text-[11px] text-gray-600 mt-4 leading-relaxed italic">
+                Settings persist in local storage. For permanent cloud production, define environment variables in your server configuration.
+              </p>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              These settings are not saved permanently. Use environment variables in EasyPanel for permanent values.
-            </p>
           </div>
         )}
-      </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-4xl mx-auto space-y-4">
+        <div className="max-w-3xl mx-auto py-8 px-4 space-y-8">
           {messages.length === 0 && (
-            <div className="text-center text-gray-500 py-12">
-              <p className="text-xl mb-2">Welcome to the chat!</p>
-              <p>Type a message to start.</p>
+            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+              <div className="w-16 h-16 bg-blue-600/10 rounded-3xl flex items-center justify-center border border-blue-500/20 mb-2">
+                <Mic className="w-8 h-8 text-blue-500" />
+              </div>
+              <h2 className="text-3xl font-black tracking-tight text-white">How can I help you today?</h2>
+              <p className="text-gray-500 max-w-sm">Type or use voice to interact with your secure, private intelligence.</p>
             </div>
           )}
 
-          {messages.map((msg, index) => (
+          {messages.map((msg, idx) => (
             <div
-              key={index}
+              key={idx}
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${msg.role === 'user'
-                  ? 'bg-blue-600 text-white rounded-tr-sm'
-                  : 'bg-gray-800 border border-gray-700 text-gray-100 rounded-tl-sm'
+                className={`max-w-[85%] sm:max-w-[75%] px-5 py-3.5 rounded-2xl leading-relaxed ${msg.role === 'user'
+                  ? 'bg-[#1d9bf0] text-white rounded-br-none shadow-lg shadow-blue-500/10'
+                  : 'bg-[#161616] border border-gray-800 text-gray-100 rounded-bl-none prose prose-invert max-w-none'
                   }`}
               >
-                {msg.role === 'user' ? (
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                {msg.role === 'assistant' ? (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
                 ) : (
-                  <div className="prose prose-invert prose-sm max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {msg.content}
-                    </ReactMarkdown>
-                  </div>
+                  <span className="text-[15px] font-medium">{msg.content}</span>
                 )}
               </div>
             </div>
           ))}
-
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="bg-[#161616] border border-gray-800 px-5 py-4 rounded-2xl rounded-bl-none shadow-xl">
+                <div className="flex gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-gray-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                  <div className="w-1.5 h-1.5 bg-gray-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                  <div className="w-1.5 h-1.5 bg-gray-600 rounded-full animate-bounce"></div>
                 </div>
               </div>
             </div>
           )}
-
-          {error && (
-            <div className="flex justify-center">
-              <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-red-400">
-                {error}
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
-      </div>
+      </main>
 
-      {/* Input */}
-      <div className="bg-gray-800 border-t border-gray-700 p-4">
-        <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSubmit} className="flex gap-3 items-center">
-            {/* Voice Recording Button - Toggle Start/Stop */}
-            <button
-              type="button"
-              onClick={toggleRecording}
-              className={`
-                flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all
-                ${isRecording
-                  ? 'bg-red-600 text-white animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.5)]'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
-                }
-              `}
-              title={isRecording ? 'Click to stop' : 'Click to speak'}
-            >
-              {isRecording ? <Square className="w-5 h-5 fill-current" /> : <Mic className="w-5 h-5" />}
-            </button>
-
-            <input
-              type="text"
+      {/* Modern Grok Input Box */}
+      <footer className="w-full max-w-4xl mx-auto p-4 sm:p-6 mb-2">
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs px-4 py-2 rounded-xl mb-3 flex justify-between items-center animate-in fade-in slide-in-from-bottom-2">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="opacity-50 hover:opacity-100">✕</button>
+          </div>
+        )}
+        <div className="relative group">
+          <form
+            onSubmit={handleSubmit}
+            className="relative flex items-end gap-2 bg-[#161616] border border-gray-800 group-focus-within:border-gray-700 rounded-3xl p-2 pl-4 shadow-2xl transition-all"
+          >
+            <textarea
+              ref={inputRef}
+              rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -392,30 +383,63 @@ function Chat({ onBack }: { onBack: () => void }) {
                   handleSubmit(e)
                 }
               }}
-              placeholder="Type your message..."
+              placeholder="Ask anything..."
               disabled={isLoading}
-              className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+              className="flex-1 bg-transparent border-none outline-none py-3 text-[15px] resize-none max-h-48 overflow-y-auto text-white placeholder-gray-600"
             />
-            <button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              className="flex-shrink-0 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors"
-            >
-              <Send className="w-5 h-5" />
-            </button>
+
+            <div className="flex items-center gap-1.5 pb-1 pr-1">
+              <button
+                type="button"
+                onClick={toggleRecording}
+                onMouseDown={(e) => e.preventDefault()}
+                className={`
+                  p-2.5 rounded-full transition-all relative
+                  ${isRecording
+                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 animate-pulse'
+                    : 'text-gray-500 hover:text-white hover:bg-gray-800'
+                  }
+                `}
+                title={isRecording ? 'Stop' : 'Voice'}
+              >
+                <Mic className="w-5.5 h-5.5" />
+              </button>
+
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="p-2.5 bg-white text-black disabled:bg-gray-800 disabled:text-gray-600 rounded-full transition-all hover:scale-105 active:scale-95 shadow-xl"
+              >
+                <Send className="w-5.5 h-5.5" />
+              </button>
+            </div>
           </form>
-          {isRecording && (
-            <p className="text-center text-red-400 text-sm mt-2 animate-pulse">
-              Listening... (click or release space to stop)
-            </p>
-          )}
-          {!isRecording && (
-            <p className="text-center text-gray-500 text-xs mt-2">
-              Hold <kbd className="px-1.5 py-0.5 bg-gray-800 border border-gray-700 rounded text-[10px] font-mono">Space</kbd> to talk
-            </p>
-          )}
+
+          <div className="flex justify-between items-center mt-3 px-2">
+            <div className="flex gap-4">
+              {isRecording && (
+                <div className="flex items-center gap-2 text-red-500 text-[11px] font-bold uppercase tracking-widest">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                  Streaming Audio
+                </div>
+              )}
+            </div>
+            {!isRecording && (
+              <p className="text-[10px] text-gray-600 uppercase tracking-widest font-bold">
+                Hold <kbd className="px-1.5 py-0.5 bg-gray-900 border border-gray-800 rounded font-mono">Space</kbd> to talk
+              </p>
+            )}
+            {isRecording && (
+              <p className="text-[10px] text-red-600 uppercase tracking-widest font-bold">
+                Release <kbd className="px-1.5 py-0.5 bg-gray-900 border border-red-900/30 rounded font-mono">Space</kbd> to send
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </footer>
     </div>
   )
 }
