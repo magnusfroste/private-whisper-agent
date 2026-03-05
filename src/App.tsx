@@ -1,591 +1,461 @@
-import { useState, useRef, useEffect } from 'react'
-import { Mic } from 'lucide-react'
+import { useState, useRef, useEffect, FormEvent } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import {
+  Mic,
+  Send,
+  Settings,
+  Trash2,
+  ArrowLeft,
+  History,
+  LayoutDashboard,
+  Waves,
+  ShieldCheck,
+  MoreVertical,
+  X
+} from 'lucide-react'
 import LiveTranscriber from './LiveTranscriber'
 import RealtimeTranscriber from './RealtimeTranscriber'
-import Chat from './Chat'
 
-interface Transcription {
-  text: string
-  latency: number
-  timestamp: Date
+// --- Types ---
+interface Message {
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: string
 }
 
-interface HealthStatus {
-  status: string
-  whisper_connected: boolean
-  whisper_latency_ms?: number
-  error?: string
+interface ChatConfig {
+  apiUrl: string
+  modelName: string
 }
 
-const LOCAL_STORAGE_VIEW_KEY = 'privai_last_view'
+// --- Constants ---
+const STORAGE_KEYS = {
+  MESSAGES: 'privai_chat_v2_messages',
+  CONFIG: 'privai_chat_v2_config',
+  VIEW: 'privai_chat_v2_view',
+  HISTORY: 'privai_chat_v2_history'
+}
+
+type ViewType = 'chat' | 'live' | 'realtime' | 'landing'
 
 function App() {
-  const [view, setView] = useState<'landing' | 'push' | 'live' | 'realtime' | 'chat'>(() => {
-    return (localStorage.getItem(LOCAL_STORAGE_VIEW_KEY) as any) || 'landing'
+  // --- State ---
+  const [view, setView] = useState<ViewType>(() => (localStorage.getItem(STORAGE_KEYS.VIEW) as ViewType) || 'chat')
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.MESSAGES)
+    return saved ? JSON.parse(saved) : [{
+      role: 'assistant',
+      content: 'I am your private intelligence. Everything you say stays on your own server. How can I help you explore today?',
+      timestamp: new Date().toLocaleTimeString()
+    }]
   })
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
-  const [currentResult, setCurrentResult] = useState<string | null>(null)
-  const [currentLatency, setCurrentLatency] = useState<number | null>(null)
-  const [history, setHistory] = useState<Transcription[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [health, setHealth] = useState<HealthStatus | null>(null)
-  const [checkingHealth, setCheckingHealth] = useState(false)
-  const [language, setLanguage] = useState<'auto' | 'sv'>('auto')
+  const [showConfig, setShowConfig] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [config, setConfig] = useState<ChatConfig>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.CONFIG)
+    return saved ? JSON.parse(saved) : {
+      apiUrl: (import.meta as any).env?.VITE_CHAT_API_URL || 'http://192.168.68.107:8000/v1',
+      modelName: (import.meta as any).env?.VITE_CHAT_MODEL_NAME || 'autoversio'
+    }
+  })
 
+  // --- Refs ---
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
 
-  const checkHealth = async () => {
-    setCheckingHealth(true)
-    try {
-      const response = await fetch('/api/health')
-      const data = await response.json()
-      setHealth(data)
-      console.log('Health check:', data)
-    } catch (err) {
-      console.error('Health check failed:', err)
-      setHealth({
-        status: 'unhealthy',
-        whisper_connected: false,
-        error: 'Could not reach health endpoint'
-      })
-    } finally {
-      setCheckingHealth(false)
-    }
-  }
-
-  // Check health on mount
+  // --- Effects ---
   useEffect(() => {
-    checkHealth()
-  }, [])
+    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages))
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
-  // Persist view state
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_VIEW_KEY, view)
+    localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(config))
+  }, [config])
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.VIEW, view)
   }, [view])
 
-  // Spacebar to talk
+  // --- Spacebar Logic (Global) ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.code === 'Space' && !e.repeat && view === 'push') {
-        e.preventDefault()
-        if (!isRecording) startRecording()
+      // Don't trigger if typing in a field, UNLESS it's the main chat input being controlled via Space for voice
+      if ((e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) && e.target !== inputRef.current) return
+
+      if (e.code === 'Space' && !e.repeat) {
+        // Only prevent default if we transition to recording OR we're already recording
+        if (view === 'chat' && !isLoading) {
+          e.preventDefault()
+          if (!isRecording) startRecording()
+        }
       }
     }
+
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.code === 'Space' && view === 'push') {
-        e.preventDefault()
-        stopRecording()
+      if (e.code === 'Space') {
+        if (view === 'chat' && isRecording) {
+          e.preventDefault()
+          stopRecording()
+        }
       }
     }
 
-    if (view === 'push') {
-      window.addEventListener('keydown', handleKeyDown)
-      window.addEventListener('keyup', handleKeyUp)
-    }
-
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [view, isRecording])
+  }, [view, isRecording, isLoading])
 
-  const getLatencyColor = (latency: number): string => {
-    if (latency < 500) return 'text-green-400'
-    if (latency < 1000) return 'text-yellow-400'
-    return 'text-red-400'
-  }
-
-  const getLatencyBgColor = (latency: number): string => {
-    if (latency < 500) return 'bg-green-900/30 border-green-700'
-    if (latency < 1000) return 'bg-yellow-900/30 border-yellow-700'
-    return 'bg-red-900/30 border-red-700'
-  }
-
+  // --- Audio Functions ---
   const startRecording = async () => {
     try {
+      setError(null)
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      })
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' })
 
       chunksRef.current = []
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data)
-        }
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data)
       }
 
       mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(track => track.stop())
-        await sendRecording()
+        stream.getTracks().forEach(t => t.stop())
+        await processVoice()
       }
 
       mediaRecorderRef.current = mediaRecorder
       mediaRecorder.start()
       setIsRecording(true)
-      setError(null)
     } catch (err) {
-      setError('Could not access microphone. Ensure you have given permission.')
-      console.error('Microphone error:', err)
+      setError('Microphone access denied.')
+      console.error(err)
     }
   }
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
     }
   }
 
-  const sendRecording = async () => {
+  const processVoice = async () => {
     if (chunksRef.current.length === 0) return
-
-    const startTime = performance.now()
     const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+    if (blob.size < 500) return // Skip tiny clicks
 
-    // Ignore empty/tiny recordings (110 bytes is just WebM header)
-    if (blob.size < 500) {
-      console.log('Recording too short, ignoring. Size:', blob.size)
-      return
-    }
+    setIsLoading(true)
     const formData = new FormData()
     formData.append('file', blob, 'recording.webm')
-    // Send language preference to backend
-    formData.append('language', language === 'auto' ? '' : 'sv')
 
     try {
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        throw new Error('Transkribering misslyckades')
-      }
-
+      const response = await fetch('/api/transcribe', { method: 'POST', body: formData })
+      if (!response.ok) throw new Error('Transcription failed')
       const data = await response.json()
-      const endTime = performance.now()
-      const latency = Math.round(endTime - startTime)
-
-      setCurrentResult(data.text)
-      setCurrentLatency(latency)
-
-      setHistory(prev => [
-        {
-          text: data.text,
-          latency,
-          timestamp: new Date()
-        },
-        ...prev.slice(0, 9)
-      ])
+      if (data.text) await sendMessage(data.text)
     } catch (err) {
-      setError('Could not transcribe. Check the Whisper server.')
-      console.error('Transcription error:', err)
+      setError(err instanceof Error ? err.message : 'Transcription Error')
+      setIsLoading(false)
     }
   }
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('sv-SE', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
+  // --- Chat Functions ---
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || isLoading) return
+    sendMessage(input.trim())
+    setInput('')
   }
 
-  // Live and realtime views will be handled within the main layout now.
-  // We remove the early returns to allow persistent navigation.
-  if (view === 'landing') {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white">
-        {/* Hero Section */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-40" />
+  const sendMessage = async (text: string) => {
+    const userMsg: Message = { role: 'user', content: text, timestamp: new Date().toLocaleTimeString() }
+    setMessages(prev => [...prev, userMsg])
+    setIsLoading(true)
 
-          <div className="max-w-6xl mx-auto px-4 py-20 md:py-32 relative">
-            <div className="text-center">
-              <div className="inline-flex items-center gap-2 bg-blue-900/30 border border-blue-700 rounded-full px-4 py-2 mb-6">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-sm text-blue-300">100% Private & Secure</span>
-              </div>
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiUrl: config.apiUrl,
+          modelName: config.modelName,
+          messages: [...messages, userMsg]
+        })
+      })
 
-              <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Private Audio Transcription
-              </h1>
-
-              <p className="text-xl md:text-2xl text-gray-400 mb-8 max-w-3xl mx-auto">
-                Transcribe speech to text locally without sending your audio to the cloud.
-                Full control over your data – no sharing, no tracking.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-                <button
-                  onClick={() => setView('push')}
-                  className="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold text-lg transition-all shadow-lg shadow-blue-600/25"
-                >
-                  Get Started
-                </button>
-                <a
-                  href="https://www.privai.se"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-8 py-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg font-semibold text-lg transition-all"
-                >
-                  Learn about PRIVAI →
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <div className="max-w-6xl mx-auto px-4 py-20">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-              <div className="text-4xl mb-4">🔒</div>
-              <h3 className="text-xl font-semibold mb-2">100% Private</h3>
-              <p className="text-gray-400">
-                All audio processing happens locally. Your conversations are never shared with third parties.
-              </p>
-            </div>
-
-            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-              <div className="text-4xl mb-4">⚡</div>
-              <h3 className="text-xl font-semibold mb-2">Fast</h3>
-              <p className="text-gray-400">
-                Minimal latency thanks to optimized Whisper model and local processing.
-              </p>
-            </div>
-
-            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-              <div className="text-4xl mb-4">🎯</div>
-              <h3 className="text-xl font-semibold mb-2">High Accuracy</h3>
-              <p className="text-gray-400">
-                OpenAI's Whisper-large-v3 delivers exceptional transcription quality in Swedish and English.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* How It Works */}
-        <div className="max-w-6xl mx-auto px-4 py-20">
-          <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
-
-          <div className="space-y-8">
-            <div className="flex flex-col md:flex-row gap-6 items-center">
-              <div className="flex-shrink-0 w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl font-bold">
-                1
-              </div>
-              <div className="flex-grow">
-                <h3 className="text-xl font-semibold mb-2">Hold the microphone button</h3>
-                <p className="text-gray-400">
-                  Press and hold the big button while speaking. Release to transcribe.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-6 items-center">
-              <div className="flex-shrink-0 w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-2xl font-bold">
-                2
-              </div>
-              <div className="flex-grow">
-                <h3 className="text-xl font-semibold mb-2">See results instantly</h3>
-                <p className="text-gray-400">
-                  Text appears immediately with processing time information.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-6 items-center">
-              <div className="flex-shrink-0 w-16 h-16 bg-pink-600 rounded-full flex items-center justify-center text-2xl font-bold">
-                3
-              </div>
-              <div className="flex-grow">
-                <h3 className="text-xl font-semibold mb-2">Copy or save</h3>
-                <p className="text-gray-400">
-                  Copy transcription to clipboard or view in history.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-          <h2 className="text-3xl font-bold mb-6">Ready to Start?</h2>
-          <p className="text-xl text-gray-400 mb-8">
-            Try our private audio transcription today – completely free and no registration required.
-          </p>
-          <button
-            onClick={() => setView('push')}
-            className="px-10 py-5 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold text-xl transition-all shadow-lg shadow-blue-600/25"
-          >
-            Start Transcribing
-          </button>
-        </div>
-
-        {/* Autoversio Section */}
-        <div className="max-w-6xl mx-auto px-4 py-20">
-          <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 border border-blue-700/50 rounded-2xl p-8 md:p-12">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold mb-4">About Autoversio</h2>
-              <p className="text-xl text-gray-300">
-                Local Swedish AI Provider
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                <div className="text-3xl mb-4">☁️</div>
-                <h3 className="text-xl font-semibold mb-3 text-blue-400">Semi-Local Services</h3>
-                <p className="text-gray-400">
-                  Cloud-hosted transcription and LLM services with data processed in Sweden.
-                  Combines convenience with privacy compliance for organizations that need
-                  flexibility without compromising on data sovereignty.
-                </p>
-              </div>
-
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                <div className="text-3xl mb-4">🏢</div>
-                <h3 className="text-xl font-semibold mb-3 text-purple-400">Fully Local On-Premises</h3>
-                <p className="text-gray-400">
-                  Complete on-premise deployment with hardware provision for maximum
-                  data sovereignty. Perfect for organizations requiring offline capability,
-                  strict data control, and complete independence from external infrastructure.
-                </p>
-              </div>
-            </div>
-
-            <div className="text-center mt-8">
-              <a
-                href="https://www.autoversio.ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-lg font-semibold"
-              >
-                Learn more at www.autoversio.ai →
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-gray-800 mt-auto">
-          <div className="max-w-6xl mx-auto px-4 py-8">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-gray-500 text-sm">
-                Powered by <a href="https://www.autoversio.ai" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors">Autoversio</a>
-              </p>
-              <div className="flex gap-6">
-                <a
-                  href="https://www.autoversio.ai"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  Autoversio
-                </a>
-                <a
-                  href="https://www.privai.se"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  PRIVAI
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+      if (!response.ok) throw new Error('Chat API Error')
+      const data = await response.json()
+      const assistantMsg: Message = {
+        role: 'assistant',
+        content: data.choices?.[0]?.message?.content || '...',
+        timestamp: new Date().toLocaleTimeString()
+      }
+      setMessages(prev => [...prev, assistantMsg])
+    } catch (err) {
+      setError('Model failed to respond.')
+    } finally {
+      setIsLoading(false)
+    }
   }
+
+  // --- UI Helpers ---
+  const NavItem = ({ id, label, icon: Icon }: { id: ViewType, label: string, icon: any }) => (
+    <button
+      onClick={() => setView(id)}
+      className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${view === id
+        ? 'bg-[#1d9bf0]/10 text-[#1d9bf0] font-bold border border-[#1d9bf0]/20'
+        : 'text-gray-400 hover:bg-[#161616] hover:text-white'
+        }`}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="text-[15px]">{label}</span>
+    </button>
+  )
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">
-          Welcome to Private Transcription
-        </h1>
+    <div className="flex h-screen bg-black text-white font-sans overflow-hidden">
 
-        {/* View Switcher - Persistent Navigation */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8 bg-gray-800 p-2 rounded-xl border border-gray-700">
-          <button
-            onClick={() => setView('push')}
-            className={`px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all ${view === 'push' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-              }`}
-          >
-            Push-to-Talk
-          </button>
-          <button
-            onClick={() => setView('live')}
-            className={`px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all ${view === 'live' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-              }`}
-          >
-            Live Server
-          </button>
-          <button
-            onClick={() => setView('realtime')}
-            className={`px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all ${view === 'realtime' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-              }`}
-          >
-            Realtime WS
-          </button>
-          <button
-            onClick={() => setView('chat')}
-            className={`px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all ${view === 'chat' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-              }`}
-          >
-            Chatbot
-          </button>
+      {/* --- Sidebar --- */}
+      <aside className={`flex flex-col border-r border-gray-800 transition-all duration-300 ${sidebarOpen ? 'w-64 sm:w-72' : 'w-0 opacity-0 pointer-events-none'}`}>
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-black font-black text-xl">
+              X
+            </div>
+            <div className="flex flex-col">
+              <span className="font-black tracking-tighter text-xl">PrivateAI</span>
+              <span className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-[-4px]">Grok Mode</span>
+            </div>
+          </div>
+
+          <nav className="space-y-1.5">
+            <NavItem id="chat" label="Intelligence" icon={LayoutDashboard} />
+            <NavItem id="live" label="Live Stream" icon={Waves} />
+            <NavItem id="realtime" label="Realtime WS" icon={History} />
+          </nav>
+
+          <div className="mt-10">
+            <div className="bg-[#161616] rounded-2xl p-4 border border-gray-800">
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck className="w-4 h-4 text-green-500" />
+                <span className="text-xs font-bold uppercase tracking-tight">Security Stats</span>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-[10px] text-gray-500 font-medium">
+                  <span>Local Storage</span>
+                  <span className="text-gray-300">Encrypted</span>
+                </div>
+                <div className="flex justify-between text-[10px] text-gray-500 font-medium">
+                  <span>Node Status</span>
+                  <span className="text-green-500">Active</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {view === 'live' && <LiveTranscriber onBack={() => { }} />}
-        {view === 'realtime' && <RealtimeTranscriber onBack={() => { }} />}
-        {view === 'chat' && <Chat onBack={() => { }} />}
+        <div className="mt-auto p-6 border-t border-gray-800">
+          <button
+            onClick={() => setShowConfig(true)}
+            className="w-full flex items-center justify-center gap-2 bg-[#161616] hover:bg-gray-800 border border-gray-800 py-3 rounded-2xl text-sm font-bold transition-all"
+          >
+            <Settings className="w-4 h-4" />
+            Config
+          </button>
+        </div>
+      </aside>
 
-        {view === 'push' && (
-          <>
-            {/* Language Toggle */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-400 mb-2">Language</label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setLanguage('auto')}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${language === 'auto'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                >
-                  Auto-detect
-                </button>
-                <button
-                  onClick={() => setLanguage('sv')}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${language === 'sv'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                >
-                  Swedish
-                </button>
-              </div>
-            </div>
+      {/* --- Main Content --- */}
+      <main className="flex-1 flex flex-col relative bg-black">
 
-            {/* Health Status */}
-            <div className={`rounded-lg p-4 mb-6 border ${health?.whisper_connected
-              ? 'bg-green-900/30 border-green-700'
-              : 'bg-red-900/30 border-red-700'
-              }`}>
-              <div className="flex items-center justify-between">
+        {/* Header Toggle */}
+        {!sidebarOpen && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="absolute top-6 left-6 z-50 p-2.5 bg-[#161616] border border-gray-800 rounded-full text-gray-400 hover:text-white"
+          >
+            <ArrowLeft className="w-5 h-5 rotate-180" />
+          </button>
+        )}
+
+        {/* View Switcher Container */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {view === 'chat' && (
+            <div className="flex-1 flex flex-col h-full">
+              {/* Header */}
+              <header className="flex items-center justify-between px-8 py-6 glass-header sticky top-0 z-10">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-black tracking-tight uppercase tracking-tighter">Private AI Chat</h2>
+                </div>
                 <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'
-                    }`} />
-                  <span className="font-semibold">
-                    Whisper: {health?.whisper_connected ? 'Connected' : 'Disconnected'}
-                  </span>
+                  <button onClick={() => setMessages([])} className="p-2 text-gray-500 hover:text-red-400"><Trash2 className="w-5 h-5" /></button>
+                  <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-gray-500 hover:text-white"><MoreVertical className="w-5 h-5" /></button>
                 </div>
-                <button
-                  onClick={checkHealth}
-                  disabled={checkingHealth}
-                  className="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded disabled:opacity-50"
-                >
-                  {checkingHealth ? 'Checking...' : 'Refresh'}
-                </button>
-              </div>
-              {health?.whisper_latency_ms && (
-                <p className="text-sm text-gray-400 mt-2">
-                  Latency to Whisper: {health.whisper_latency_ms}ms
-                </p>
-              )}
-              {health?.error && (
-                <p className="text-sm text-red-400 mt-2">{health.error}</p>
-              )}
-            </div>
+              </header>
 
-            <div className="flex flex-col items-center justify-center mb-8">
-              <button
-                onMouseDown={startRecording}
-                onMouseUp={stopRecording}
-                onMouseLeave={() => isRecording && stopRecording()}
-                onTouchStart={startRecording}
-                onTouchEnd={stopRecording}
-                className={`
-              relative w-36 h-36 rounded-full flex items-center justify-center
-              transition-all duration-300 group
-              ${isRecording
-                    ? 'bg-red-600 scale-105 shadow-[0_0_50px_rgba(220,38,38,0.6)]'
-                    : 'bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-blue-500/50 hover:scale-105'
-                  }
-            `}
-              >
-                {isRecording && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-full rounded-full animate-ping opacity-20 bg-red-400"></div>
-                    {/* Waveform visualizer effect */}
-                    <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-80">
-                      <div className="w-1.5 h-6 bg-white rounded-full animate-[bounce_1s_infinite]"></div>
-                      <div className="w-1.5 h-10 bg-white rounded-full animate-[bounce_1.2s_infinite]"></div>
-                      <div className="w-1.5 h-16 bg-white rounded-full animate-[bounce_0.8s_infinite]"></div>
-                      <div className="w-1.5 h-12 bg-white rounded-full animate-[bounce_1.4s_infinite]"></div>
-                      <div className="w-1.5 h-8 bg-white rounded-full animate-[bounce_0.9s_infinite]"></div>
-                    </div>
-                  </div>
-                )}
-                <span className={`text-xl font-bold transition-all ${isRecording ? 'opacity-0' : 'text-gray-200 group-hover:text-white'}`}>
-                  <Mic size={48} className="mb-2 mx-auto text-blue-400 group-hover:text-blue-300" />
-                  Hold to Talk
-                </span>
-              </button>
-              <p className="mt-6 text-gray-400 font-medium">
-                You can also hold down <kbd className="px-2 py-1 bg-gray-800 border border-gray-600 rounded-md shadow-sm text-sm font-mono text-gray-300 mx-1">Space</kbd>
-              </p>
-            </div>
-
-            {error && (
-              <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6 text-center">
-                {error}
-              </div>
-            )}
-
-            {currentResult && (
-              <div className={`rounded-lg p-6 mb-6 border ${getLatencyBgColor(currentLatency || 0)}`}>
-                <p className="text-xl mb-4">{currentResult}</p>
-                <p className={`text-sm font-mono ${getLatencyColor(currentLatency || 0)}`}>
-                  Latency: {currentLatency}ms
-                </p>
-              </div>
-            )}
-
-            {history.length > 0 && (
-              <div className="space-y-3 mt-12 bg-gray-800/20 rounded-xl p-6 border border-gray-800/50">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-300 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    History
-                  </h2>
-                </div>
-                {history.map((item, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-800/60 hover:bg-gray-800 transition-colors border border-gray-700/50 rounded-lg p-5 group"
-                  >
-                    <p className="text-base mb-3 text-gray-200 leading-relaxed selection:bg-blue-500/30 selection:text-white">{item.text}</p>
-                    <div className="flex justify-between items-center text-xs text-gray-500 font-mono">
-                      <span>{formatTime(item.timestamp)}</span>
-                      <span className={`px-2 py-1 rounded bg-gray-900/50 ${getLatencyColor(item.latency)}`}>
-                        {item.latency}ms
-                      </span>
+              {/* Chat Content */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar px-6 sm:px-20 py-10 space-y-12">
+                {messages.map((msg, i) => (
+                  <div key={i} className={`flex w-full group animate-slide-up ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`flex gap-4 max-w-[90%] sm:max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                      <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center font-bold text-xs ${msg.role === 'user' ? 'bg-blue-500' : 'bg-white text-black font-black'}`}>
+                        {msg.role === 'user' ? 'U' : 'X'}
+                      </div>
+                      <div className={`space-y-1 ${msg.role === 'user' ? 'text-right' : ''}`}>
+                        <div className={`text-[10px] text-gray-600 font-black uppercase tracking-widest px-1`}>
+                          {msg.role === 'assistant' ? 'Private Intelligence' : 'You'} — {msg.timestamp}
+                        </div>
+                        <div className={`
+                            px-5 py-3.5 text-[15.5px] leading-relaxed tracking-tight
+                            ${msg.role === 'user'
+                            ? 'bg-[#1d9bf0] text-white rounded-3xl rounded-tr-none'
+                            : 'bg-transparent text-gray-100 prose prose-invert max-w-none'
+                          }
+                         `}>
+                          {msg.role === 'assistant'
+                            ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                            : msg.content
+                          }
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
+                {isLoading && (
+                  <div className="flex gap-4 px-12">
+                    <div className="flex gap-1.5 py-2">
+                      <div className="w-1.5 h-1.5 bg-gray-700 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                      <div className="w-1.5 h-1.5 bg-gray-700 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                      <div className="w-1.5 h-1.5 bg-gray-700 rounded-full animate-bounce"></div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
               </div>
-            )}
-          </>
-        )}
-      </div>
+
+              {/* Input Bar */}
+              <div className="px-6 sm:px-20 pb-10">
+                {error && (
+                  <div className="max-w-4xl mx-auto mb-4 bg-red-900/20 border border-red-900/40 text-red-500 px-4 py-2 rounded-2xl text-xs flex justify-between items-center animate-slide-up">
+                    <span>{error}</span>
+                    <button onClick={() => setError(null)}><X className="w-4 h-4" /></button>
+                  </div>
+                )}
+
+                <div className="max-w-4xl mx-auto relative group">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="relative flex items-end gap-3 bg-[#0b0b0b] border border-gray-800 group-focus-within:border-gray-700 group-focus-within:bg-[#080808] focus-within:ring-4 focus-within:ring-blue-500/5 rounded-[2.5rem] p-3 pl-6 shadow-2xl transition-all"
+                  >
+                    <textarea
+                      ref={inputRef}
+                      className="flex-1 bg-transparent border-none outline-none py-3 text-[16px] resize-none max-h-48 overflow-y-auto text-white placeholder-gray-600 font-medium"
+                      placeholder="Ask PrivateAI anything..."
+                      rows={1}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          handleSubmit(e)
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+
+                    <div className="flex items-center gap-2 pb-1.5 pr-1.5">
+                      <button
+                        type="button"
+                        onClick={startRecording}
+                        className={`p-3 rounded-full transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse-glow' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}
+                        title="Voice Input"
+                      >
+                        <Mic className="w-5.5 h-5.5" />
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!input.trim() || isLoading}
+                        className="p-3.5 bg-white text-black disabled:bg-gray-800 disabled:text-gray-600 rounded-full transition-all hover:scale-105 active:scale-95 shadow-xl disabled:shadow-none"
+                      >
+                        <Send className="w-5.5 h-5.5" />
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="absolute top-[-3.5rem] left-0 right-0 flex justify-center pointer-events-none">
+                    {isRecording && (
+                      <div className="bg-[#1d9bf0] text-white px-5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-blue-500/30 animate-slide-up">
+                        <span className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-white rounded-full animate-ping" />
+                          Recording Voice Command...
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-3 px-6 flex justify-between text-[10px] text-gray-700 font-bold uppercase tracking-widest">
+                    <span>Private & Encrypted Node</span>
+                    <span>Hold <kbd className="px-1.5 py-0.5 bg-[#161616] border border-gray-800 rounded font-mono">SPACE</kbd> to talk</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {view === 'live' && <LiveTranscriber onBack={() => setView('chat')} />}
+          {view === 'realtime' && <RealtimeTranscriber onBack={() => setView('chat')} />}
+        </div>
+      </main>
+
+      {/* --- Config Modal --- */}
+      {showConfig && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in transition-all">
+          <div className="bg-[#0b0b0b] border border-gray-800 rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl animate-slide-up">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-black italic tracking-tighter">NODE SETTINGS</h3>
+              <button onClick={() => setShowConfig(false)} className="p-2 text-gray-500 hover:text-white bg-gray-900 rounded-full transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 ml-1 tracking-widest uppercase">Intelligence Base (vLLM URL)</label>
+                <input
+                  className="w-full bg-black border border-gray-800 rounded-2xl px-5 py-3 outline-none focus:border-blue-500 transition-all font-mono text-sm"
+                  value={config.apiUrl}
+                  onChange={(e) => setConfig({ ...config, apiUrl: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 ml-1 tracking-widest uppercase">Model Identity</label>
+                <input
+                  className="w-full bg-black border border-gray-800 rounded-2xl px-5 py-3 outline-none focus:border-blue-500 transition-all font-mono text-sm"
+                  value={config.modelName}
+                  onChange={(e) => setConfig({ ...config, modelName: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowConfig(false)}
+              className="w-full mt-8 bg-white text-black py-4 rounded-2xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              Apply Changes
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
