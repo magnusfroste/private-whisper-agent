@@ -11,7 +11,9 @@ import {
   ShieldCheck,
   X,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Github,
+  ExternalLink
 } from 'lucide-react'
 import LiveTranscriber from './LiveTranscriber'
 import RealtimeTranscriber from './RealtimeTranscriber'
@@ -268,6 +270,29 @@ function App() {
               </div>
             </div>
           )}
+
+          <div className={`mt-auto w-full pt-6 border-t border-gray-800 space-y-2 ${sidebarOpen ? 'px-2' : 'flex flex-col items-center gap-4'}`}>
+            <a
+              href="https://www.autoversio.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-3 text-gray-500 hover:text-white transition-colors py-1 ${!sidebarOpen && 'justify-center'}`}
+              title={!sidebarOpen ? "Autoversio AI" : ""}
+            >
+              <ExternalLink className="w-4 h-4" />
+              {sidebarOpen && <span className="text-[11px] font-bold uppercase tracking-wider">autoversio.ai</span>}
+            </a>
+            <a
+              href="https://github.com/magnusfroste/private-whisper-agent"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-3 text-gray-500 hover:text-white transition-colors py-1 ${!sidebarOpen && 'justify-center'}`}
+              title={!sidebarOpen ? "GitHub Repository" : ""}
+            >
+              <Github className="w-4 h-4" />
+              {sidebarOpen && <span className="text-[11px] font-bold uppercase tracking-wider">Open Source</span>}
+            </a>
+          </div>
         </div>
       </aside>
 
