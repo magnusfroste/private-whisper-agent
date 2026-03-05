@@ -17,12 +17,12 @@ import {
   Heart,
   Briefcase,
   Zap,
-  Brain,
   Cpu
 } from 'lucide-react'
 import LiveTranscriber from './LiveTranscriber'
 import RealtimeTranscriber from './RealtimeTranscriber'
 import NativeIntelligence from './NativeIntelligence'
+import SovereignCompliance from './SovereignCompliance'
 
 // --- Types ---
 interface Message {
@@ -44,7 +44,7 @@ const STORAGE_KEYS = {
   HISTORY: 'privai_chat_v2_history'
 }
 
-type ViewType = 'chat' | 'live' | 'realtime' | 'landing' | 'native'
+type ViewType = 'chat' | 'live' | 'realtime' | 'landing' | 'native' | 'compliance'
 type PersonalityType = 'standard' | 'sycophant' | 'formal' | 'rude'
 
 const PERSONALITIES: Record<PersonalityType, { name: string, prompt: string | null, icon: any, color: string }> = {
@@ -297,6 +297,7 @@ function App() {
             <NavItem id="native" label="Native Agent" icon={Cpu} />
             <NavItem id="live" label="Transcribe" icon={Waves} />
             <NavItem id="realtime" label="Realtime WS" icon={History} />
+            <NavItem id="compliance" label="Compliance & Privacy" icon={ShieldCheck} />
           </nav>
 
           <div className={`mt-auto w-full pt-6 border-t border-gray-800 space-y-4 ${sidebarOpen ? 'px-2' : 'flex flex-col items-center'}`}>
@@ -316,27 +317,6 @@ function App() {
                     <div className="flex justify-between text-[10px] text-gray-500 font-medium overflow-hidden">
                       <span>Node Status</span>
                       <span className="text-green-500">Active</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pipeline Info */}
-                <div className="bg-[#161616] rounded-2xl p-4 border border-gray-800 animate-in fade-in duration-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Brain className="w-4 h-4 text-blue-500" />
-                    <span className="text-xs font-bold uppercase tracking-tight text-blue-100">Architecture</span>
-                  </div>
-                  <div className="space-y-1 text-[10px] text-gray-500 overflow-hidden">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-gray-300 font-bold uppercase tracking-tighter">Split Pipeline (STT+LLM)</span>
-                      <span className="leading-tight">Whisper-v3 + Autoversio LLM</span>
-                    </div>
-                    <div className="pt-2 flex flex-col gap-0.5 border-t border-gray-800/50 mt-1">
-                      <div className="flex items-center gap-1.5">
-                        <Cpu className="w-2.5 h-2.5 text-purple-500" />
-                        <span className="text-purple-400 font-bold uppercase tracking-tighter">Roadmap</span>
-                      </div>
-                      <span className="text-gray-400 leading-tight">Moving to <b>Native Multimodal</b> inference for direct audio-to-intelligence weights.</span>
                     </div>
                   </div>
                 </div>
@@ -548,6 +528,7 @@ function App() {
             />
           )}
           {view === 'native' && <NativeIntelligence />}
+          {view === 'compliance' && <SovereignCompliance />}
         </div>
       </main>
     </div>

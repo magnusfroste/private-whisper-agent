@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, FormEvent } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -156,7 +156,7 @@ export default function NativeIntelligence() {
         }
     }
 
-    const handleTextSubmit = async (e: React.FormEvent) => {
+    const handleTextSubmit = async (e: FormEvent) => {
         e.preventDefault()
         if (!input.trim() || isLoading) return
 
@@ -273,6 +273,12 @@ export default function NativeIntelligence() {
                             rows={1}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault()
+                                    handleTextSubmit(e)
+                                }
+                            }}
                             disabled={isLoading}
                         />
 
