@@ -165,11 +165,11 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
         {/* Under Development Banner */}
         <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🚧</span>
+            <span className="text-2xl">ℹ️</span>
             <div>
-              <h3 className="font-semibold text-yellow-400">Under Development</h3>
+              <h3 className="font-semibold text-yellow-400">Information</h3>
               <p className="text-sm text-gray-400">
-                This feature is actively under development. For a stable real-time experience, please use "Live Transcription" instead.
+                Whisper does not natively support real-time transcription. The goal is to achieve semi-real-time feedback where you receive updates on your speech during recording. This will happen in chunks as audio is collected.
               </p>
             </div>
           </div>
@@ -254,12 +254,13 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
 
         {/* Instructions */}
         <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-          <h3 className="font-semibold mb-2">Instructions:</h3>
+          <h3 className="font-semibold mb-2">Hur det fungerar:</h3>
           <ul className="text-sm text-gray-400 space-y-1">
-            <li>• Click "Start" to begin transcription</li>
-            <li>• Text updates automatically every 5 seconds while you speak</li>
-            <li>• Click "Stop" when you're done</li>
-            <li>• Copy or clear the text</li>
+            <li>• Klicka "Start" för att börja transkribera</li>
+            <li>• Ljud sparas i chunks var 5:e sekund</li>
+            <li>• Varje chunk skickas till Whisper och texten uppdateras löpande</li>
+            <li>• Klicka "Stop" när du är klar</li>
+            <li>• Kopiera eller rensa texten</li>
           </ul>
         </div>
       </div>
