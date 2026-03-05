@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import LiveTranscriber from './LiveTranscriber'
 import RealtimeTranscriber from './RealtimeTranscriber'
+import Chat from './Chat'
 
 interface Transcription {
   text: string
@@ -16,7 +17,7 @@ interface HealthStatus {
 }
 
 function App() {
-  const [view, setView] = useState<'landing' | 'push' | 'live' | 'realtime'>('landing')
+  const [view, setView] = useState<'landing' | 'push' | 'live' | 'realtime' | 'chat'>('landing')
   const [isRecording, setIsRecording] = useState(false)
   const [currentResult, setCurrentResult] = useState<string | null>(null)
   const [currentLatency, setCurrentLatency] = useState<number | null>(null)
@@ -159,6 +160,11 @@ function App() {
   // Show realtime transcriber view
   if (view === 'realtime') {
     return <RealtimeTranscriber onBack={() => setView('push')} />
+  }
+
+  // Show chat view
+  if (view === 'chat') {
+    return <Chat onBack={() => setView('push')} />
   }
 
   // Landing Page
@@ -394,6 +400,12 @@ function App() {
             className="px-6 py-2 rounded-lg font-semibold transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
           >
             Realtime
+          </button>
+          <button
+            onClick={() => setView('chat')}
+            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
+          >
+            Chat
           </button>
         </div>
 

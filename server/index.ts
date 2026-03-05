@@ -239,6 +239,53 @@ app.get('/api/health', async (req: express.Request, res: express.Response) => {
   }
 })
 
+// Proxy endpoint för chat - skickar vidare till vllm
+app.post('/api/chat', async (req: express.Request, res: express.Response) => {
+  const { apiUrl, modelName, messages } = req.body
+
+  if (!apiUrl || !modelName || !messages) {
+    return res.status(400).json({ error: 'Missing required fields: apiUrl, modelName, messages' })
+  }
+
+  console.log('[Chat] Forwarding to:', apiUrl, 'Model:', modelName)
+
+  try {
+    const response = await fetch(`${apiUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages: messages.map((m: any) => ({
+          role: m.role,
+          content: m.content
+        })),
+        stream: false
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Chat] Error from API:', response.status, errorText)
+      return res.status(response.status).json({
+        error: 'Chat API error',
+        details: errorText
+      })
+    }
+
+    const data = await response.json()
+    console.log('[Chat] Success! Response received')
+    res.json(data)
+  } catch (error) {
+    console.error('[Chat] Error:', error instanceof Error ? error.message : error)
+    res.status(500).json({
+      error: 'Failed to forward chat request',
+      details: error instanceof Error ? error.message : String(error)
+    })
+  }
+})
+
 // Serve index.html for all other routes (SPA support)
 app.get('*', (req: express.Request, res: express.Response) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'))

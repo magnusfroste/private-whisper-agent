@@ -52,4 +52,3 @@ services:
       --trust-remote-code
       --max-num-seqs 8
       --swap-space 4
-      --language sv
