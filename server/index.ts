@@ -313,17 +313,22 @@ app.post('/api/chat/native', upload.single('file'), async (req: MulterRequest, r
       return res.status(400).json({ error: 'No prompt or audio file provided' })
     }
 
-    // Construct multimodal payload
+    // Construct multimodal payload with a strong system prompt to stabilize behavior
     const payload = {
       model: ULTRAVOX_MODEL_NAME,
       messages: [
+        {
+          role: 'system',
+          content: 'You are Autoversio Native Agent, a state-of-the-art multimodal AI. You hear the user directly. Always respond concisely and accurately in the same language as the user (default to Swedish if unsure). Maintain a professional yet helpful tone. If you receive audio, it is the primary source of truth.'
+        },
         {
           role: 'user',
           content: content
         }
       ],
       stream: false,
-      max_tokens: 1024
+      max_tokens: 512, // Reduced for speed
+      temperature: 0.2 // More deterministic to avoid hallucinations
     }
 
     const startTime = Date.now()
