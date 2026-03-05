@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { Mic } from 'lucide-react'
 import LiveTranscriber from './LiveTranscriber'
 import RealtimeTranscriber from './RealtimeTranscriber'
 import Chat from './Chat'
@@ -16,8 +17,12 @@ interface HealthStatus {
   error?: string
 }
 
+const LOCAL_STORAGE_VIEW_KEY = 'privai_last_view'
+
 function App() {
-  const [view, setView] = useState<'landing' | 'push' | 'live' | 'realtime' | 'chat'>('landing')
+  const [view, setView] = useState<'landing' | 'push' | 'live' | 'realtime' | 'chat'>(() => {
+    return (localStorage.getItem(LOCAL_STORAGE_VIEW_KEY) as any) || 'landing'
+  })
   const [isRecording, setIsRecording] = useState(false)
   const [currentResult, setCurrentResult] = useState<string | null>(null)
   const [currentLatency, setCurrentLatency] = useState<number | null>(null)
@@ -42,7 +47,7 @@ function App() {
       setHealth({
         status: 'unhealthy',
         whisper_connected: false,
-        error: 'Kunde inte nå health endpoint'
+        error: 'Could not reach health endpoint'
       })
     } finally {
       setCheckingHealth(false)
@@ -53,6 +58,39 @@ function App() {
   useEffect(() => {
     checkHealth()
   }, [])
+
+  // Persist view state
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_VIEW_KEY, view)
+  }, [view])
+
+  // Spacebar to talk
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.code === 'Space' && !e.repeat && view === 'push') {
+        e.preventDefault()
+        if (!isRecording) startRecording()
+      }
+    }
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.code === 'Space' && view === 'push') {
+        e.preventDefault()
+        stopRecording()
+      }
+    }
+
+    if (view === 'push') {
+      window.addEventListener('keydown', handleKeyDown)
+      window.addEventListener('keyup', handleKeyUp)
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [view, isRecording])
 
   const getLatencyColor = (latency: number): string => {
     if (latency < 500) return 'text-green-400'
@@ -91,7 +129,7 @@ function App() {
       setIsRecording(true)
       setError(null)
     } catch (err) {
-      setError('Kunde inte tillgripa mikrofon. Se till att du ger tillstånd.')
+      setError('Could not access microphone. Ensure you have given permission.')
       console.error('Microphone error:', err)
     }
   }
@@ -139,7 +177,7 @@ function App() {
         ...prev.slice(0, 9)
       ])
     } catch (err) {
-      setError('Kunde inte transkribera. Kontrollera Whisper-servern.')
+      setError('Could not transcribe. Check the Whisper server.')
       console.error('Transcription error:', err)
     }
   }
@@ -152,22 +190,8 @@ function App() {
     })
   }
 
-  // Show live transcriber view
-  if (view === 'live') {
-    return <LiveTranscriber onBack={() => setView('push')} />
-  }
-
-  // Show realtime transcriber view
-  if (view === 'realtime') {
-    return <RealtimeTranscriber onBack={() => setView('push')} />
-  }
-
-  // Show chat view
-  if (view === 'chat') {
-    return <Chat onBack={() => setView('push')} />
-  }
-
-  // Landing Page
+  // Live and realtime views will be handled within the main layout now.
+  // We remove the early returns to allow persistent navigation.
   if (view === 'landing') {
     return (
       <div className="min-h-screen bg-gray-900 text-white">
@@ -381,150 +405,179 @@ function App() {
           Welcome to Private Transcription
         </h1>
 
-        {/* View Switcher */}
-        <div className="flex justify-center gap-4 mb-8">
+        {/* View Switcher - Persistent Navigation */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8 bg-gray-800 p-2 rounded-xl border border-gray-700">
           <button
             onClick={() => setView('push')}
-            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-blue-600 text-white"
+            className={`px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all ${view === 'push' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+              }`}
           >
             Push-to-Talk
           </button>
           <button
             onClick={() => setView('live')}
-            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
+            className={`px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all ${view === 'live' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+              }`}
           >
-            Live Transcription
+            Live Server
           </button>
           <button
             onClick={() => setView('realtime')}
-            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
+            className={`px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all ${view === 'realtime' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+              }`}
           >
-            Realtime
+            Realtime WS
           </button>
           <button
             onClick={() => setView('chat')}
-            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
+            className={`px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all ${view === 'chat' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+              }`}
           >
-            Chat
+            Chatbot
           </button>
         </div>
 
-        {/* Language Toggle */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-400 mb-2">Språk</label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setLanguage('auto')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                language === 'auto'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              Auto-detect
-            </button>
-            <button
-              onClick={() => setLanguage('sv')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                language === 'sv'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              Svenska
-            </button>
-          </div>
-        </div>
+        {view === 'live' && <LiveTranscriber onBack={() => { }} />}
+        {view === 'realtime' && <RealtimeTranscriber onBack={() => { }} />}
+        {view === 'chat' && <Chat onBack={() => { }} />}
 
-        {/* Health Status */}
-        <div className={`rounded-lg p-4 mb-6 border ${
-          health?.whisper_connected
-            ? 'bg-green-900/30 border-green-700'
-            : 'bg-red-900/30 border-red-700'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${
-                health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'
-              }`} />
-              <span className="font-semibold">
-                Whisper: {health?.whisper_connected ? 'Connected' : 'Disconnected'}
-              </span>
-            </div>
-            <button
-              onClick={checkHealth}
-              disabled={checkingHealth}
-              className="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded disabled:opacity-50"
-            >
-              {checkingHealth ? 'Checking...' : 'Refresh'}
-            </button>
-          </div>
-          {health?.whisper_latency_ms && (
-            <p className="text-sm text-gray-400 mt-2">
-              Latency to Whisper: {health.whisper_latency_ms}ms
-            </p>
-          )}
-          {health?.error && (
-            <p className="text-sm text-red-400 mt-2">{health.error}</p>
-          )}
-        </div>
-
-        <div className="flex justify-center mb-8">
-          <button
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-            onMouseLeave={() => isRecording && stopRecording()}
-            onTouchStart={startRecording}
-            onTouchEnd={stopRecording}
-            className={`
-              relative w-32 h-32 rounded-full flex items-center justify-center
-              transition-all duration-200
-              ${isRecording
-                ? 'bg-red-600 shadow-[0_0_30px_rgba(220,38,38,0.5)]'
-                : 'bg-gray-700 hover:bg-gray-600'
-              }
-            `}
-          >
-            {isRecording && (
-              <span className="absolute inset-0 rounded-full animate-pulse-ring border-4 border-red-500" />
-            )}
-            <span className="text-lg font-semibold">
-              {isRecording ? 'Release' : 'Hold'}
-            </span>
-          </button>
-        </div>
-
-        {error && (
-          <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6 text-center">
-            {error}
-          </div>
-        )}
-
-        {currentResult && (
-          <div className={`rounded-lg p-6 mb-6 border ${getLatencyBgColor(currentLatency || 0)}`}>
-            <p className="text-xl mb-4">{currentResult}</p>
-            <p className={`text-sm font-mono ${getLatencyColor(currentLatency || 0)}`}>
-              Latency: {currentLatency}ms
-            </p>
-          </div>
-        )}
-
-        {history.length > 0 && (
-          <div className="space-y-2">
-            <h2 className="text-lg font-semibold mb-4 text-gray-500">History</h2>
-            {history.map((item, index) => (
-              <div
-                key={index}
-                className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-4"
-              >
-                <p className="text-sm mb-2 text-gray-300">{item.text}</p>
-                <div className="flex justify-between items-center text-xs text-gray-500">
-                  <span>{formatTime(item.timestamp)}</span>
-                  <span>{item.latency}ms</span>
-                </div>
+        {view === 'push' && (
+          <>
+            {/* Language Toggle */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-400 mb-2">Language</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setLanguage('auto')}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${language === 'auto'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                >
+                  Auto-detect
+                </button>
+                <button
+                  onClick={() => setLanguage('sv')}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${language === 'sv'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                >
+                  Swedish
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+
+            {/* Health Status */}
+            <div className={`rounded-lg p-4 mb-6 border ${health?.whisper_connected
+              ? 'bg-green-900/30 border-green-700'
+              : 'bg-red-900/30 border-red-700'
+              }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full ${health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'
+                    }`} />
+                  <span className="font-semibold">
+                    Whisper: {health?.whisper_connected ? 'Connected' : 'Disconnected'}
+                  </span>
+                </div>
+                <button
+                  onClick={checkHealth}
+                  disabled={checkingHealth}
+                  className="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded disabled:opacity-50"
+                >
+                  {checkingHealth ? 'Checking...' : 'Refresh'}
+                </button>
+              </div>
+              {health?.whisper_latency_ms && (
+                <p className="text-sm text-gray-400 mt-2">
+                  Latency to Whisper: {health.whisper_latency_ms}ms
+                </p>
+              )}
+              {health?.error && (
+                <p className="text-sm text-red-400 mt-2">{health.error}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col items-center justify-center mb-8">
+              <button
+                onMouseDown={startRecording}
+                onMouseUp={stopRecording}
+                onMouseLeave={() => isRecording && stopRecording()}
+                onTouchStart={startRecording}
+                onTouchEnd={stopRecording}
+                className={`
+              relative w-36 h-36 rounded-full flex items-center justify-center
+              transition-all duration-300 group
+              ${isRecording
+                    ? 'bg-red-600 scale-105 shadow-[0_0_50px_rgba(220,38,38,0.6)]'
+                    : 'bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-blue-500/50 hover:scale-105'
+                  }
+            `}
+              >
+                {isRecording && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-full h-full rounded-full animate-ping opacity-20 bg-red-400"></div>
+                    {/* Waveform visualizer effect */}
+                    <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-80">
+                      <div className="w-1.5 h-6 bg-white rounded-full animate-[bounce_1s_infinite]"></div>
+                      <div className="w-1.5 h-10 bg-white rounded-full animate-[bounce_1.2s_infinite]"></div>
+                      <div className="w-1.5 h-16 bg-white rounded-full animate-[bounce_0.8s_infinite]"></div>
+                      <div className="w-1.5 h-12 bg-white rounded-full animate-[bounce_1.4s_infinite]"></div>
+                      <div className="w-1.5 h-8 bg-white rounded-full animate-[bounce_0.9s_infinite]"></div>
+                    </div>
+                  </div>
+                )}
+                <span className={`text-xl font-bold transition-all ${isRecording ? 'opacity-0' : 'text-gray-200 group-hover:text-white'}`}>
+                  <Mic size={48} className="mb-2 mx-auto text-blue-400 group-hover:text-blue-300" />
+                  Hold to Talk
+                </span>
+              </button>
+              <p className="mt-6 text-gray-400 font-medium">
+                You can also hold down <kbd className="px-2 py-1 bg-gray-800 border border-gray-600 rounded-md shadow-sm text-sm font-mono text-gray-300 mx-1">Space</kbd>
+              </p>
+            </div>
+
+            {error && (
+              <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6 text-center">
+                {error}
+              </div>
+            )}
+
+            {currentResult && (
+              <div className={`rounded-lg p-6 mb-6 border ${getLatencyBgColor(currentLatency || 0)}`}>
+                <p className="text-xl mb-4">{currentResult}</p>
+                <p className={`text-sm font-mono ${getLatencyColor(currentLatency || 0)}`}>
+                  Latency: {currentLatency}ms
+                </p>
+              </div>
+            )}
+
+            {history.length > 0 && (
+              <div className="space-y-3 mt-12 bg-gray-800/20 rounded-xl p-6 border border-gray-800/50">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-gray-300 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    History
+                  </h2>
+                </div>
+                {history.map((item, index) => (
+                  <div
+                    key={index}
+                    className="bg-gray-800/60 hover:bg-gray-800 transition-colors border border-gray-700/50 rounded-lg p-5 group"
+                  >
+                    <p className="text-base mb-3 text-gray-200 leading-relaxed selection:bg-blue-500/30 selection:text-white">{item.text}</p>
+                    <div className="flex justify-between items-center text-xs text-gray-500 font-mono">
+                      <span>{formatTime(item.timestamp)}</span>
+                      <span className={`px-2 py-1 rounded bg-gray-900/50 ${getLatencyColor(item.latency)}`}>
+                        {item.latency}ms
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

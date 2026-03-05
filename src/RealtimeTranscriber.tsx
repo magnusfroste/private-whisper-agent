@@ -176,15 +176,13 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
         </div>
 
         {/* Health Status */}
-        <div className={`rounded-lg p-3 mb-6 border text-sm ${
-          health?.whisper_connected
+        <div className={`rounded-lg p-3 mb-6 border text-sm ${health?.whisper_connected
             ? 'bg-green-900/30 border-green-700'
             : 'bg-red-900/30 border-red-700'
-        }`}>
+          }`}>
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${
-              health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'
-            }`} />
+            <div className={`w-2 h-2 rounded-full ${health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'
+              }`} />
             <span>Whisper: {health?.whisper_connected ? 'Connected' : 'Disconnected'}</span>
           </div>
         </div>
@@ -254,13 +252,13 @@ export default function RealtimeTranscriber({ onBack }: RealtimeTranscriberProps
 
         {/* Instructions */}
         <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-          <h3 className="font-semibold mb-2">Hur det fungerar:</h3>
+          <h3 className="font-semibold mb-2">How it works:</h3>
           <ul className="text-sm text-gray-400 space-y-1">
-            <li>• Klicka "Start" för att börja transkribera</li>
-            <li>• Ljud sparas i chunks var 5:e sekund</li>
-            <li>• Varje chunk skickas till Whisper och texten uppdateras löpande</li>
-            <li>• Klicka "Stop" när du är klar</li>
-            <li>• Kopiera eller rensa texten</li>
+            <li>• Click "Start" to begin transcribing</li>
+            <li>• Audio is saved in chunks every 5 seconds</li>
+            <li>• Each chunk is sent to Whisper and text updates continuously</li>
+            <li>• Click "Stop" when you are done</li>
+            <li>• Copy or clear the text</li>
           </ul>
         </div>
       </div>
