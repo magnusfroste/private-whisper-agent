@@ -1,5 +1,5 @@
 {
-  "name": "whisper-latency-test",
+  "name": "private-whisper-agent",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

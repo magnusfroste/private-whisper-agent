@@ -1,17 +1,16 @@
-# Private Whisper Agent
+# Private Whisper Agent (Whisper Mode)
 
 <div align="center">
 
-🔒 **Privacy-First** | 🎙️ **Speech-to-Text** | 💬 **Agentic Chat** | ⚡ **Fast & Local**
+🔒 **Privacy-First** | 🎙️ **Speech-to-Text** | 💬 **Intelligence Chat** | ⚡ **Fast & Local**
 
 ---
 
-A privacy-first Whisper speech-to-text and agentic chat test platform. Compare different models and settings to optimize response times and user experience.
+A premium, privacy-focused speech-to-text platform and intelligent chat agent. All computation happens on your private hardware.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-18-20232a?style=flat&logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=flat&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
 
 ---
@@ -20,190 +19,103 @@ A privacy-first Whisper speech-to-text and agentic chat test platform. Compare d
 
 ## Project Goal
 
-This platform enables benchmarking and testing of local private AI models against various configurations, focusing on:
-- **Privacy**: All audio processing happens locally - no data leaves your environment
-- **Model Comparison**: Test different Whisper models and LLM configurations
-- **Performance Optimization**: Measure and optimize latency and response quality
-- **Agentic Chat**: Integrated voice-to-chat workflow with configurable backends
+**Private Whisper Agent** is built for organizations and individuals who require high-performance AI tools without sacrificing data sovereignty. It transforms raw audio into actionable intelligence through a sophisticated, Grok-inspired interface.
 
-## Features
+- **Data Sovereignty**: Your audio and chat history never leave your server.
+- **Whisper Mode**: A high-tech, minimalist UI designed for speed and clarity.
+- **Node Integration**: Connects directly to local vLLM and Whisper instances.
 
-- **Push-to-Talk Transcription**: Simple press-and-hold interface for instant speech-to-text
-- **Live Transcription**: Continuous real-time transcription while recording
-- **Real-time Transcription**: Near real-time streaming updates (under development)
-- **Agentic Chat**: Voice-enabled chat that transcribes audio and sends to configurable LLM backends
-- **Privacy First**: All audio processing happens locally - no data sent to third parties
-- **Performance Metrics**: Detailed latency measurements for each operation
-- **Configurable Backends**: Easily swap between different Whisper and LLM endpoints
+---
 
-## Tech Stack
+## 🛠 Features
 
-- **Frontend**: React with TypeScript
-- **Backend**: Node.js with Express
-- **Speech-to-Text**: OpenAI Whisper (self-hosted via vLLM)
-- **Audio Processing**: FFmpeg for format conversion
-- **Deployment**: Docker with EasyPanel
+### 1. Intelligence (Chat)
+A voice-enabled AI chat interface. 
+- **Hold-to-Talk**: Hold `SPACE` to record a voice query; release to transcribe and send.
+- **Private Intelligence**: Context-aware chat using your local LLM (Qwen, Llama, etc.).
+- **Markdown Support**: Rich text and code highlighting for technical queries.
 
-## Getting Started
+### 2. Transcribe
+Dedicated audio capture for long-form speech.
+- **Voice-to-Clipboard**: Transcribe long recordings and copy them instantly.
+- **Send to Chat**: Seamlessly move transcribed text to the Intelligence engine for further analysis.
+- **Real-time Feedback**: Pulse visualizer indicates audio capture activity.
+
+### 3. Realtime WS (WS Pipeline)
+Our lowest-latency transcription stream.
+- **Continuous Stream**: Audio is sent in chunks for near-instant text feedback.
+- **Dynamic Correction**: Text updates as you speak to fix context-based transcription errors.
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
+- **Docker & Docker Compose**
+- **NVIDIA GPU** (Recommended for Whisper/vLLM performance)
+- **Node.js 20+** (For local development)
 
-- Node.js 20+
-- Docker and Docker Compose
-- FFmpeg
+### Deployment
 
-### Installation
+The project is optimized for **EasyPanel** or standard **Docker Compose**.
 
-1. Clone the repository:
+#### Option A: Unified Stack (App + Whisper)
+Build and run the entire environment in one command:
 ```bash
-git clone https://github.com/magnusfroste/private-whisper-agent.git
-cd private-whisper-agent
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-4. Build and run:
-```bash
-npm run build
-npm run dev
-```
-
-## Usage
-
-### Transcription Modes
-
-1. **Push-to-Talk**: Hold the microphone button while speaking, release to transcribe
-2. **Live Transcription**: Continuous transcription as you speak
-3. **Realtime**: Streaming transcription with near real-time updates
-
-### Agentic Chat
-
-The chat feature combines voice transcription with LLM responses:
-
-1. Click "Chat" to open the chat interface
-2. Configure your backend settings (API URL and model name)
-3. Use the microphone button to speak - your voice is transcribed and sent to the LLM
-4. Or type messages directly
-5. Receive responses from your configured model
-
-The chat supports:
-- Voice input (record → transcribe → send to LLM)
-- Text input
-- Configurable API endpoints and model names
-- Session clearing
-
-## Architecture
-
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
-│   Client    │────▶│   Server     │────▶│  Whisper/vLLM   │
-│  (React)    │     │  (Express)   │     │  Transcription  │
-└─────────────┘     └──────────────┘     └─────────────────┘
-                               │
-                               ▼
-                      ┌─────────────────┐
-                      │   LLM Backend   │
-                      │ (Qwen, etc.)    │
-                      └─────────────────┘
-```
-
-## Benchmarking
-
-To run benchmarks:
-1. Use consistent test phrases across all models
-2. Record latency measurements
-3. Evaluate transcription accuracy manually
-4. Compare costs between self-hosted and cloud solutions
-5. Test different model configurations for optimal performance
-
-## Docker Deployment
-
-The project includes Docker configurations for easy deployment:
-
-```bash
-# Using docker-compose with Whisper + vLLM
-docker-compose -f docker-compose.vllm.yml up -d
-
-# Or use the main docker-compose
 docker-compose up -d
 ```
 
-## Environment Variables
+#### Option B: Dedicated Pipeline (Whisper Only)
+If you want to run the Whisper/vLLM server as a standalone node:
+```bash
+docker-compose -f docker-compose.vllm.yml up -d
+```
 
-Configure the following in your `.env` file:
+---
 
-- `PORT`: Server port (default: 3000)
-- `WHISPER_URL`: Whisper/vLLM endpoint URL
-- `VITE_CHAT_API_URL`: Default LLM API endpoint for chat
-- `VITE_CHAT_MODEL_NAME`: Default model name for chat
+## ⚙️ Configuration
 
-## License
+Configuration is handled exclusively via environment variables. There is no manual settings UI to ensure the security of your endpoints.
 
-This project is licensed under the MIT License - see below for details.
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Web App Port | `3000` |
+| `WHISPER_URL` | Endpoint for the Whisper server | `http://whisper-vllm:8001` |
+| `VITE_CHAT_API_URL` | vLLM/OpenAI compatible chat API | `http://172.17.0.1:8000/v1` |
+| `VITE_CHAT_MODEL_NAME` | Model ID to use for Intelligence | `autoversio` |
 
-## MIT License
+---
 
-Copyright (c) 2024 Magnus Froste
+## 📐 Architecture
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+```mermaid
+graph LR
+    User((User)) -->|Voice/Text| App[Private Whisper App]
+    App -->|Audio Chunks| Server[Node.js Proxy]
+    Server -->|WebM/WAV| Whisper[Whisper vLLM Node]
+    App -->|JSON Post| LLM[LLM vLLM Node]
+    Whisper -->|Text| App
+    LLM -->|Stream/Text| App
+```
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+---
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## 🛡 License
 
-## About
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Built with ❤️ for the open-source community
+---
 
 ## About Autoversio
 
-**Autoversio** is a local Swedish provider offering flexible AI deployment options:
+**Autoversio** is a Swedish provider offering flexible AI deployment options:
 
-- **Semi-Local Transcription & LLM Services**: Cloud-hosted services with data processed in Sweden, combining convenience with privacy compliance
-- **Fully Local On-Premises Solutions**: Complete on-premise deployment with hardware provision for maximum data sovereignty and offline capability
+- **Semi-Local Services**: Cloud-hosted in Sweden for compliance and speed.
+- **Fully Local On-Prem**: Complete data sovereignty with dedicated hardware.
 
-Whether you need semi-local services or fully on-premises deployment with dedicated hardware, Autoversio provides tailored AI solutions for organizations prioritizing data privacy and control.
-
-Learn more: [www.autoversio.ai](https://www.autoversio.ai)
+Managed by **[PRIVAI](https://www.privai.se)** - Private AI solutions for everyone.
 
 ---
-
-**Part of [PRIVAI](https://www.privai.se)** - Private AI solutions for everyone
-
----
-
-<p align="center">
-  <a href="https://github.com/magnusfroste/private-whisper-agent">
-    <img src="https://img.shields.io/github/stars/magnusfroste/private-whisper-agent.svg?style=social&label=Star&maxAge=2592000" alt="GitHub stars">
-  </a>
-  <a href="https://github.com/magnusfroste/private-whisper-agent/network">
-    <img src="https://img.shields.io/github/forks/magnusfroste/private-whisper-agent.svg?style=social&label=Fork&maxAge=2592000" alt="GitHub forks">
-  </a>
-  <a href="https://github.com/magnusfroste/private-whisper-agent/graphs/contributors">
-    <img src="https://img.shields.io/github/contributors/magnusfroste/private-whisper-agent.svg" alt="GitHub contributors">
-  </a>
-</p>
 
 <p align="center">
   <strong>© 2024 Magnus Froste. Built with ❤️ for the open-source community.</strong>
