@@ -5,13 +5,13 @@ import {
   Mic,
   Send,
   Trash2,
-  ArrowLeft,
   History,
   LayoutDashboard,
   Waves,
   ShieldCheck,
-  MoreVertical,
-  X
+  X,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react'
 import LiveTranscriber from './LiveTranscriber'
 import RealtimeTranscriber from './RealtimeTranscriber'
@@ -213,13 +213,14 @@ function App() {
   const NavItem = ({ id, label, icon: Icon }: { id: ViewType, label: string, icon: any }) => (
     <button
       onClick={() => setView(id)}
-      className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${view === id
+      className={`w-full flex items-center rounded-xl transition-all ${sidebarOpen ? 'gap-4 px-4 py-3' : 'justify-center p-3'} ${view === id
         ? 'bg-[#1d9bf0]/10 text-[#1d9bf0] font-bold border border-[#1d9bf0]/20'
         : 'text-gray-400 hover:bg-[#161616] hover:text-white'
         }`}
+      title={!sidebarOpen ? label : ''}
     >
-      <Icon className="w-5 h-5" />
-      <span className="text-[15px]">{label}</span>
+      <Icon className="w-5 h-5 flex-shrink-0" />
+      {sidebarOpen && <span className="text-[15px] whitespace-nowrap overflow-hidden">{label}</span>}
     </button>
   )
 
@@ -227,70 +228,70 @@ function App() {
     <div className="flex h-screen bg-black text-white font-sans overflow-hidden">
 
       {/* --- Sidebar --- */}
-      <aside className={`flex flex-col border-r border-gray-800 transition-all duration-300 ${sidebarOpen ? 'w-64 sm:w-72' : 'w-0 opacity-0 pointer-events-none'}`}>
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-black font-black text-xl">
+      <aside className={`flex flex-col border-r border-gray-800 transition-all duration-300 bg-black z-30 ${sidebarOpen ? 'w-64 sm:w-72' : 'w-[72px]'}`}>
+        <div className={`flex flex-col h-full ${sidebarOpen ? 'p-6' : 'p-3 items-center overflow-hidden'}`}>
+          <div className={`flex items-center gap-3 mb-10 ${sidebarOpen ? '' : 'justify-center'}`}>
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-black font-black text-xl flex-shrink-0">
               X
             </div>
-            <div className="flex flex-col">
-              <span className="font-black tracking-tighter text-xl">PrivateAI</span>
-              <span className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-[-4px]">Grok Mode</span>
-            </div>
+            {sidebarOpen && (
+              <div className="flex flex-col overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-2 transition-all">
+                <span className="font-black tracking-tighter text-xl">PrivateAI</span>
+                <span className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-[-4px]">Grok Mode</span>
+              </div>
+            )}
           </div>
 
-          <nav className="space-y-1.5">
+          <nav className="space-y-1.5 w-full">
             <NavItem id="chat" label="Intelligence" icon={LayoutDashboard} />
             <NavItem id="live" label="Transcribe" icon={Waves} />
             <NavItem id="realtime" label="Realtime WS" icon={History} />
           </nav>
 
-          <div className="mt-10">
-            <div className="bg-[#161616] rounded-2xl p-4 border border-gray-800">
-              <div className="flex items-center gap-2 mb-2">
-                <ShieldCheck className="w-4 h-4 text-green-500" />
-                <span className="text-xs font-bold uppercase tracking-tight">Security Stats</span>
-              </div>
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px] text-gray-500 font-medium">
-                  <span>Local Storage</span>
-                  <span className="text-gray-300">Encrypted</span>
+          {sidebarOpen && (
+            <div className="mt-10 animate-in fade-in duration-500">
+              <div className="bg-[#161616] rounded-2xl p-4 border border-gray-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShieldCheck className="w-4 h-4 text-green-500" />
+                  <span className="text-xs font-bold uppercase tracking-tight">Security Stats</span>
                 </div>
-                <div className="flex justify-between text-[10px] text-gray-500 font-medium">
-                  <span>Node Status</span>
-                  <span className="text-green-500">Active</span>
+                <div className="space-y-1 text-nowrap">
+                  <div className="flex justify-between text-[10px] text-gray-500 font-medium overflow-hidden">
+                    <span>Local Storage</span>
+                    <span className="text-gray-300">Encrypted</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-500 font-medium overflow-hidden">
+                    <span>Node Status</span>
+                    <span className="text-green-500">Active</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </aside>
 
       {/* --- Main Content --- */}
       <main className="flex-1 flex flex-col relative bg-black">
 
-        {/* Header Toggle */}
-        {!sidebarOpen && (
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="absolute top-6 left-6 z-50 p-2.5 bg-[#161616] border border-gray-800 rounded-full text-gray-400 hover:text-white"
-          >
-            <ArrowLeft className="w-5 h-5 rotate-180" />
-          </button>
-        )}
-
         {/* View Switcher Container */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {view === 'chat' && (
             <div className="flex-1 flex flex-col h-full">
               {/* Header */}
-              <header className="flex items-center justify-between px-8 py-6 glass-header sticky top-0 z-10">
+              <header className="flex items-center justify-between px-6 py-6 glass-header sticky top-0 z-10">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-xl font-black tracking-tight uppercase">Private AI Chat</h2>
+                  <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                  >
+                    {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+                  </button>
+                  <h2 className="text-xl font-black tracking-tight uppercase ml-2">Private AI Chat</h2>
                 </div>
                 <div className="flex items-center gap-3">
                   <button onClick={() => setMessages([WELCOME_MESSAGE])} className="p-2 text-gray-500 hover:text-red-400 transition-colors"><Trash2 className="w-5 h-5" /></button>
-                  <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-gray-500 hover:text-white transition-colors"><MoreVertical className="w-5 h-5" /></button>
+                  <div className="w-4" /> {/* Spacer */}
                 </div>
               </header>
 
