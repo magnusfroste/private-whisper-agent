@@ -237,7 +237,7 @@ function App() {
             {sidebarOpen && (
               <div className="flex flex-col overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-2 transition-all">
                 <span className="font-black tracking-tighter text-xl">PrivateAI</span>
-                <span className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-[-4px]">Grok Mode</span>
+                <span className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-[-4px]">Whisper Mode</span>
               </div>
             )}
           </div>
