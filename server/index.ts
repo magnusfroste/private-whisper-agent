@@ -343,6 +343,14 @@ app.post('/api/chat/native', upload.single('file'), async (req: MulterRequest, r
     }
 
     const data = await response.json()
+    console.log('[NativeChat] Ultravox Response:', JSON.stringify(data, null, 2))
+
+    if (!data.choices || data.choices.length === 0) {
+      console.warn('[NativeChat] Warning: Ultravox returned no choices!')
+    } else if (!data.choices[0].message?.content) {
+      console.warn('[NativeChat] Warning: Ultravox returned empty content!')
+    }
+
     console.log('[NativeChat] Framgång!')
     res.json(data)
   } catch (error) {
