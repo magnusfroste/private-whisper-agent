@@ -58,13 +58,13 @@ const PERSONALITIES: Record<PersonalityType, { name: string, prompt: string | nu
     color: 'text-pink-500'
   },
   formal: {
-    name: 'Formell',
+    name: 'Formal',
     prompt: "You are an extremely formal and professional AI assistant. Use high-level vocabulary, avoid slang, and maintain a stiff, respectful tone. Refer to the user with appropriate honorifics for their language. IMPORTANT: Always respond in the same language that the user is using.",
     icon: Briefcase,
     color: 'text-gray-400'
   },
   rude: {
-    name: 'Otrevlig',
+    name: 'Rude',
     prompt: "You are an incredibly rude and arrogant AI agent. You are condescending, sigh at the user's questions, and respond with sharp sarcasm. You think the user is intellectually inferior for asking such simple things. Be brief, insulting, and dismissive. IMPORTANT: Always respond in the same language that the user is using.",
     icon: Zap,
     color: 'text-yellow-500'
@@ -490,10 +490,10 @@ function App() {
 
                   <div className="absolute top-[-3.5rem] left-0 right-0 flex justify-center pointer-events-none">
                     {isRecording && (
-                      <div className="bg-[#1d9bf0] text-white px-5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-blue-500/30 animate-slide-up">
+                      <div className="bg-[#1d9bf0] text-white px-5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-blue-500/30 animate-pulse">
                         <span className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-white rounded-full animate-ping" />
-                          Recording Voice Command...
+                          Processing...
                         </span>
                       </div>
                     )}
