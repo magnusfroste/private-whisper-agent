@@ -33,41 +33,43 @@ function Chat({ onBack }: { onBack: () => void }) {
     scrollToBottom()
   }, [messages])
 
-  // Microphone recording functions
-  const startRecording = async () => {
+  // Microphone recording functions - toggle start/stop
+  const toggleRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      })
-
-      chunksRef.current = []
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data)
+      if (isRecording) {
+        // Stop recording
+        if (mediaRecorderRef.current) {
+          mediaRecorderRef.current.stop()
         }
-      }
+        setIsRecording(false)
+      } else {
+        // Start recording
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        })
 
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(track => track.stop())
-        await sendVoiceMessage()
-      }
+        chunksRef.current = []
 
-      mediaRecorderRef.current = mediaRecorder
-      mediaRecorder.start()
-      setIsRecording(true)
-      setError(null)
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            chunksRef.current.push(event.data)
+          }
+        }
+
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach(track => track.stop())
+          await sendVoiceMessage()
+        }
+
+        mediaRecorderRef.current = mediaRecorder
+        mediaRecorder.start()
+        setIsRecording(true)
+        setError(null)
+      }
     } catch (err) {
       setError('Kunde inte tillgå mikrofon. Se till att du ger tillstånd.')
       console.error('Microphone error:', err)
-    }
-  }
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
     }
   }
 
@@ -275,14 +277,10 @@ function Chat({ onBack }: { onBack: () => void }) {
       <div className="bg-gray-800 border-t border-gray-700 p-4">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSubmit} className="flex gap-3 items-center">
-            {/* Voice Recording Button */}
+            {/* Voice Recording Button - Toggle Start/Stop */}
             <button
               type="button"
-              onMouseDown={startRecording}
-              onMouseUp={stopRecording}
-              onMouseLeave={() => isRecording && stopRecording()}
-              onTouchStart={startRecording}
-              onTouchEnd={stopRecording}
+              onClick={toggleRecording}
               className={`
                 w-12 h-12 rounded-full flex items-center justify-center transition-all
                 ${isRecording
@@ -290,10 +288,10 @@ function Chat({ onBack }: { onBack: () => void }) {
                   : 'bg-gray-700 hover:bg-gray-600'
                 }
               `}
-              title="Håll inne för att prata"
+              title={isRecording ? 'Klicka för att stoppa' : 'Klicka för att prata'}
             >
               {isRecording ? (
-                <div className="w-3 h-3 bg-white rounded" />
+                <div className="w-3 h-3 bg-white rounded animate-pulse" />
               ) : (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -325,7 +323,7 @@ function Chat({ onBack }: { onBack: () => void }) {
           </form>
           {isRecording && (
             <p className="text-center text-red-400 text-sm mt-2 animate-pulse">
-              Lyssnar... (släpp för att skicka)
+              Lyssnar... (klicka för att stoppa)
             </p>
           )}
         </div>
