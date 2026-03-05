@@ -65,4 +65,4 @@ services:
     ipc: host
     shm_size: '32gb'
     command: >
-      fixie-ai/ultravox-v0_5-llama-3_1-8b --served-model-name ultravox --host 0.0.0.0 --port 8000 --gpu-memory-utilization 0.90 --dtype bfloat16 --enforce-eager --max-model-len 4096 --trust-remote-code --limit-mm-per-prompt audio=1
+      fixie-ai/ultravox-v0_5-llama-3_1-8b --served-model-name ultravox --host 0.0.0.0 --port 8000 --gpu-memory-utilization 0.90 --dtype bfloat16 --enforce-eager --max-model-len 4096 --trust-remote-code --limit-mm-per-prompt '{"audio":1}'

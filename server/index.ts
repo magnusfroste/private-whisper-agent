@@ -20,6 +20,7 @@ const app = express()
 const PORT = process.env.PORT || 3000
 const WHISPER_URL = process.env.WHISPER_URL || 'http://whisper-vllm:8001'
 const ULTRAVOX_URL = process.env.ULTRAVOX_URL || 'http://ultravox-vllm:8002'
+const ULTRAVOX_MODEL_NAME = process.env.ULTRAVOX_MODEL_NAME || 'ultravox'
 
 // Parse JSON bodies
 app.use(express.json())
@@ -327,7 +328,7 @@ app.post('/api/chat/native', upload.single('file'), async (req: MulterRequest, r
 
     // Construct multimodal payload
     const payload = {
-      model: 'ultravox',
+      model: ULTRAVOX_MODEL_NAME,
       messages: [
         {
           role: 'user',
