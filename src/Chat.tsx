@@ -17,7 +17,7 @@ function Chat({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [config, setConfig] = useState<ChatConfig>({
     apiUrl: (import.meta as any).env?.VITE_CHAT_API_URL || 'http://192.168.68.107:8000/v1',
-    modelName: (import.meta as any).env?.VITE_CHAT_MODEL_NAME || 'qwen35-35-fp8'
+    modelName: (import.meta as any).env?.VITE_CHAT_MODEL_NAME || 'autoversio'
   })
   const [showConfig, setShowConfig] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
