@@ -50,7 +50,7 @@ export default function NativeIntelligence({ personality, onPersonalityChange, p
             const data = await response.json()
             setHealth(data)
         } catch (err) {
-            setHealth({ ultravox_connected: false })
+            setHealth({ ultravox_connected: false, kokoro_connected: false })
         }
     }
 
