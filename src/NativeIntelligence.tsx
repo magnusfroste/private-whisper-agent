@@ -159,7 +159,7 @@ export default function NativeIntelligence({ personalities }: NativeIntelligence
         formData.append('file', blob, 'recording.webm')
         formData.append('prompt', input || "User is asking a question via voice.")
 
-        const systemPrompt = personalities[personality]?.prompt
+        const systemPrompt = PERSONALITIES[personality]?.prompt
         if (systemPrompt) {
             formData.append('systemPrompt', systemPrompt)
         }
@@ -213,7 +213,7 @@ export default function NativeIntelligence({ personalities }: NativeIntelligence
             const formData = new FormData()
             formData.append('prompt', input)
 
-            const systemPrompt = personalities[personality]?.prompt
+            const systemPrompt = PERSONALITIES[personality]?.prompt
             if (systemPrompt) {
                 formData.append('systemPrompt', systemPrompt)
             }
