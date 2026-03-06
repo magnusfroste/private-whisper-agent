@@ -19,7 +19,7 @@ interface Message {
 }
 
 interface NativeIntelligenceProps {
-    // No props needed - self-contained component
+    // Self-contained - no external props required
 }
 
 type PersonalityType = 'standard' | 'sycophant' | 'formal' | 'rude'
