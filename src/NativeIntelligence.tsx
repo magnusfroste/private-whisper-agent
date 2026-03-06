@@ -38,7 +38,7 @@ export default function NativeIntelligence({ personality, onPersonalityChange, p
     const [error, setError] = useState<string | null>(null)
     const [health, setHealth] = useState<{ ultravox_connected: boolean, kokoro_connected: boolean, piper_connected?: boolean } | null>(null)
     const [voiceOutput, setVoiceOutput] = useState(true)
-    const [ttsEngine, setTtsEngine] = useState<'kokoro' | 'piper'>('kokoro')
+    const [ttsEngine, setTtsEngine] = useState<'kokoro' | 'piper'>(() => (localStorage.getItem('tts_engine') as 'kokoro' | 'piper') || 'kokoro')
 
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -292,7 +292,7 @@ export default function NativeIntelligence({ personality, onPersonalityChange, p
                     {voiceOutput && (
                         <div className="flex items-center bg-[#111111] border border-gray-800 rounded-full overflow-hidden">
                             <button
-                                onClick={() => setTtsEngine('kokoro')}
+                                onClick={() => { setTtsEngine('kokoro'); localStorage.setItem('tts_engine', 'kokoro') }}
                                 className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${ttsEngine === 'kokoro'
                                     ? 'bg-purple-600 text-white'
                                     : 'text-gray-500 hover:text-gray-300'
@@ -302,7 +302,7 @@ export default function NativeIntelligence({ personality, onPersonalityChange, p
                                 🇬🇧 EN
                             </button>
                             <button
-                                onClick={() => setTtsEngine('piper')}
+                                onClick={() => { setTtsEngine('piper'); localStorage.setItem('tts_engine', 'piper') }}
                                 className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${ttsEngine === 'piper'
                                     ? 'bg-purple-600 text-white'
                                     : 'text-gray-500 hover:text-gray-300'
