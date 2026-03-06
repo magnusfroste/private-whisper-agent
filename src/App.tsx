@@ -527,7 +527,13 @@ function App() {
               }}
             />
           )}
-          {view === 'native' && <NativeIntelligence />}
+          {view === 'native' && (
+            <NativeIntelligence
+              personality={personality}
+              onPersonalityChange={setPersonality}
+              personalities={PERSONALITIES}
+            />
+          )}
           {view === 'compliance' && <SovereignCompliance />}
         </div>
       </main>

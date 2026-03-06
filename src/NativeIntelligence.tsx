@@ -16,7 +16,13 @@ interface Message {
     timestamp: string
 }
 
-export default function NativeIntelligence() {
+interface NativeIntelligenceProps {
+    personality: string;
+    onPersonalityChange: (p: any) => void;
+    personalities: any;
+}
+
+export default function NativeIntelligence({ personality, onPersonalityChange, personalities }: NativeIntelligenceProps) {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
@@ -126,6 +132,11 @@ export default function NativeIntelligence() {
         formData.append('file', blob, 'recording.webm')
         formData.append('prompt', input || "User is asking a question via voice.")
 
+        const systemPrompt = personalities[personality]?.prompt
+        if (systemPrompt) {
+            formData.append('systemPrompt', systemPrompt)
+        }
+
         try {
             const userMsg: Message = {
                 role: 'user',
@@ -171,6 +182,11 @@ export default function NativeIntelligence() {
             const formData = new FormData()
             formData.append('prompt', input)
 
+            const systemPrompt = personalities[personality]?.prompt
+            if (systemPrompt) {
+                formData.append('systemPrompt', systemPrompt)
+            }
+
             const response = await fetch('/api/chat/native', {
                 method: 'POST',
                 body: formData
@@ -206,6 +222,26 @@ export default function NativeIntelligence() {
                         </div>
                     </div>
                 </div>
+
+                {/* Personality Selector */}
+                <div className="hidden md:flex items-center bg-[#111111] border border-gray-800 rounded-full p-1 gap-1">
+                    {Object.entries(personalities).map(([key, p]: [string, any]) => (
+                        <button
+                            key={key}
+                            onClick={() => onPersonalityChange(key)}
+                            className={`
+                        flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all
+                        ${personality === key
+                                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                                    : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}
+                      `}
+                        >
+                            <p.icon className={`w-3.5 h-3.5 ${personality === key ? 'text-white' : p.color}`} />
+                            {p.name}
+                        </button>
+                    ))}
+                </div>
+
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-[#161616] border border-gray-800 rounded-full">
                         <div className={`w-1.5 h-1.5 rounded-full ${health?.ultravox_connected ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -320,6 +356,6 @@ export default function NativeIntelligence() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }
