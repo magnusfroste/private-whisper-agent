@@ -263,15 +263,28 @@ function App() {
   const NavItem = ({ id, label, icon: Icon }: { id: ViewType, label: string, icon: any }) => (
     <button
       onClick={() => setView(id)}
-      className={`w-full flex items-center rounded-xl transition-all ${sidebarOpen ? 'gap-4 px-4 py-3' : 'justify-center p-3'} ${view === id
-        ? 'bg-[#1d9bf0]/10 text-[#1d9bf0] font-bold border border-[#1d9bf0]/20'
+      className={`w-full flex items-center rounded-xl transition-all ${sidebarOpen ? 'gap-4 px-4 py-2.5' : 'justify-center p-2.5'} ${view === id
+        ? 'bg-[#1d9bf0]/10 text-[#1d9bf0] font-bold border border-[#1d9bf0]/20 shadow-[0_0_15px_-5px_rgba(29,155,240,0.3)]'
         : 'text-gray-400 hover:bg-[#161616] hover:text-white'
         }`}
       title={!sidebarOpen ? label : ''}
     >
-      <Icon className="w-5 h-5 flex-shrink-0" />
-      {sidebarOpen && <span className="text-[15px] whitespace-nowrap overflow-hidden">{label}</span>}
+      <Icon className="w-4.5 h-4.5 flex-shrink-0" />
+      {sidebarOpen && <span className="text-[14px] font-semibold tracking-tight whitespace-nowrap overflow-hidden">{label}</span>}
     </button>
+  )
+
+  const NavLink = ({ href, label, icon: Icon }: { href: string, label: string, icon: any }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`w-full flex items-center rounded-xl transition-all text-gray-500 hover:bg-[#161616] hover:text-white ${sidebarOpen ? 'gap-4 px-4 py-2' : 'justify-center p-2'}`}
+      title={!sidebarOpen ? label : ''}
+    >
+      <Icon className="w-4 h-4 flex-shrink-0" />
+      {sidebarOpen && <span className="text-[13px] font-medium tracking-tight whitespace-nowrap overflow-hidden">{label}</span>}
+    </a>
   )
 
   return (
@@ -292,19 +305,34 @@ function App() {
             )}
           </div>
 
-          <nav className="space-y-1.5 w-full">
-            <NavItem id="chat" label="Intelligence Agent" icon={LayoutDashboard} />
-            <NavItem id="native" label="Native Agent" icon={Cpu} />
-            <NavItem id="live" label="Transcribe" icon={Waves} />
-            <NavItem id="realtime" label="Realtime WS" icon={History} />
-            <NavItem id="compliance" label="Compliance & Privacy" icon={ShieldCheck} />
-          </nav>
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="space-y-6 overflow-y-auto overflow-x-hidden custom-scrollbar pr-1">
+              <div className="space-y-2">
+                {sidebarOpen && <div className="px-4 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-3">Applications</div>}
+                <nav className="space-y-1">
+                  <NavItem id="chat" label="Intelligence Agent" icon={LayoutDashboard} />
+                  <NavItem id="native" label="Native Agent" icon={Cpu} />
+                  <NavItem id="live" label="Transcribe" icon={Waves} />
+                  <NavItem id="realtime" label="Realtime WS" icon={History} />
+                </nav>
+              </div>
+            </div>
 
-          <div className={`mt-auto w-full pt-6 border-t border-gray-800 space-y-4 ${sidebarOpen ? 'px-2' : 'flex flex-col items-center'}`}>
+            <div className="mt-auto pt-6 space-y-2">
+              {sidebarOpen && <div className="px-4 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-3">Information</div>}
+              <nav className="space-y-1">
+                <NavItem id="compliance" label="Compliance & Privacy" icon={ShieldCheck} />
+                <NavLink href="https://www.autoversio.ai" label="autoversio.ai" icon={ExternalLink} />
+                <NavLink href="https://github.com/magnusfroste/private-whisper-agent" label="Open Source" icon={Github} />
+              </nav>
+            </div>
+          </div>
+
+          <div className={`w-full pt-6 mt-6 border-t border-gray-800 space-y-4 ${sidebarOpen ? 'px-2' : 'flex flex-col items-center'}`}>
             {sidebarOpen && (
               <div className="space-y-3">
                 {/* Security Stats */}
-                <div className="bg-[#161616] rounded-2xl p-4 border border-gray-800 animate-in fade-in duration-500">
+                <div className="bg-[#161616] rounded-2xl p-4 border border-gray-800 animate-in fade-in duration-500 shadow-inner">
                   <div className="flex items-center gap-2 mb-2">
                     <ShieldCheck className="w-4 h-4 text-green-500" />
                     <span className="text-xs font-bold uppercase tracking-tight">Security Stats</span>
@@ -322,29 +350,6 @@ function App() {
                 </div>
               </div>
             )}
-
-            <div className="space-y-2">
-              <a
-                href="https://www.autoversio.ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`flex items-center gap-3 text-gray-500 hover:text-white transition-colors py-1 ${!sidebarOpen && 'justify-center'}`}
-                title={!sidebarOpen ? "Autoversio AI" : ""}
-              >
-                <ExternalLink className="w-4 h-4" />
-                {sidebarOpen && <span className="text-[11px] font-bold uppercase tracking-wider">autoversio.ai</span>}
-              </a>
-              <a
-                href="https://github.com/magnusfroste/private-whisper-agent"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`flex items-center gap-3 text-gray-500 hover:text-white transition-colors py-1 ${!sidebarOpen && 'justify-center'}`}
-                title={!sidebarOpen ? "GitHub Repository" : ""}
-              >
-                <Github className="w-4 h-4" />
-                {sidebarOpen && <span className="text-[11px] font-bold uppercase tracking-wider">Open Source</span>}
-              </a>
-            </div>
           </div>
         </div>
       </aside>
