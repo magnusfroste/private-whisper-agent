@@ -72,3 +72,5 @@ services:
     restart: unless-stopped
     ports:
       - "8003:8880"
+    environment:
+      - DEVICE=cpu
