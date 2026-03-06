@@ -220,18 +220,26 @@ export default function NativeIntelligence({ personality, onPersonalityChange, p
 
     const playAudio = async (text: string) => {
         try {
+            console.log('[Native] Requesting TTS for:', text.substring(0, 30) + '...')
             const response = await fetch('/api/tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text, voice: 'af_heart' })
             })
-            if (!response.ok) throw new Error('TTS Failed')
+            if (!response.ok) throw new Error(`TTS Failed with status: ${response.status}`)
+
             const blob = await response.blob()
+            console.log('[Native] Audio blob received, size:', blob.size)
+
             const url = URL.createObjectURL(blob)
             const audio = new Audio(url)
-            audio.play()
+
+            audio.onplay = () => console.log('[Native] Audio playback started')
+            audio.onerror = (e) => console.error('[Native] Audio playback error:', e)
+
+            await audio.play()
         } catch (err) {
-            console.error('Playback error:', err)
+            console.error('[Native] Playback error:', err)
         }
     }
 

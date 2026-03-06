@@ -245,6 +245,7 @@ app.post('/api/tts', async (req: express.Request, res: express.Response) => {
 
     console.log(`[TTS] Request: "${text.substring(0, 30)}..." Voice: ${voice}`)
 
+    const startTime = Date.now()
     const response = await fetch(`${KOKORO_URL}/v1/audio/speech`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -259,12 +260,16 @@ app.post('/api/tts', async (req: express.Request, res: express.Response) => {
 
     if (!response.ok) {
       const errText = await response.text()
-      console.error(`[TTS] Error: ${errText}`)
+      console.error(`[TTS] Error from Kokoro: ${response.status} - ${errText}`)
       throw new Error(`TTS API failed: ${errText}`)
     }
 
+    const duration = Date.now() - startTime
+    console.log(`[TTS] Kokoro responded in ${duration}ms with status ${response.status}`)
+
     res.setHeader('Content-Type', 'audio/mpeg')
     const arrayBuffer = await response.arrayBuffer()
+    console.log(`[TTS] Sending ${arrayBuffer.byteLength} bytes of audio to client`)
     res.send(Buffer.from(arrayBuffer))
   } catch (err) {
     console.error('[TTS] Proxy Error:', err)
