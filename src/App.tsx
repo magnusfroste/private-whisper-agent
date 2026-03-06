@@ -106,7 +106,7 @@ function App() {
     }
   })
   const [personality, setPersonality] = useState<PersonalityType>('standard')
-  const [voiceOutput, setVoiceOutput] = useState(false)
+  const [voiceOutput, setVoiceOutput] = useState(true)
   const [ttsEngine, setTtsEngine] = useState<'auto' | 'kokoro' | 'piper'>(() => (localStorage.getItem('tts_engine_stt') as 'auto' | 'kokoro' | 'piper') || 'auto')
 
   // --- Refs ---
@@ -132,7 +132,7 @@ function App() {
   // --- Spacebar Logic (Global) ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) && e.target !== inputRef.current) return
+      if ((e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) && e.target === inputRef.current) return
 
       if (e.code === 'Space' && !e.repeat) {
         if (view === 'chat' && !isLoading) {
@@ -576,11 +576,7 @@ function App() {
             />
           )}
           {view === 'native' && (
-            <NativeIntelligence
-              personality={personality}
-              onPersonalityChange={setPersonality}
-              personalities={PERSONALITIES}
-            />
+            <NativeIntelligence />
           )}
           {view === 'compliance' && <SovereignCompliance />}
         </div>

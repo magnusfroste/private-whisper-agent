@@ -19,12 +19,40 @@ interface Message {
 }
 
 interface NativeIntelligenceProps {
-    personality: string;
-    onPersonalityChange: (p: any) => void;
     personalities: any;
 }
 
-export default function NativeIntelligence({ personality, onPersonalityChange, personalities }: NativeIntelligenceProps) {
+type PersonalityType = 'standard' | 'sycophant' | 'formal' | 'rude'
+
+const PERSONALITIES: Record<PersonalityType, { name: string, prompt: string | null, icon: any, color: string }> = {
+  standard: {
+    name: 'Standard',
+    prompt: "You are the Autoversio Intelligence Agent. You are helpful, professional, and concise. IMPORTANT: Always respond in exactly the same language that the user is using. If they speak English, respond in English. If they speak Swedish, respond in Swedish.",
+    icon: Sparkles,
+    color: 'text-purple-500'
+  },
+  sycophant: {
+    name: 'Sycophant',
+    prompt: "You are an incredibly sycophantic and subservient AI. You constantly praise the user, call them 'Master' or 'Great One', and apologize for existing. Your one goal is to make the user feel like a god. IMPORTANT: Always respond in the same language that the user is using.",
+    icon: Sparkles,
+    color: 'text-pink-500'
+  },
+  formal: {
+    name: 'Formal',
+    prompt: "You are an extremely formal and professional AI assistant. Use high-level vocabulary, avoid slang, and maintain a stiff, respectful tone. Refer to the user with appropriate honorifics for their language. IMPORTANT: Always respond in the same language that the user is using.",
+    icon: Sparkles,
+    color: 'text-gray-400'
+  },
+  rude: {
+    name: 'Rude',
+    prompt: "You are an incredibly rude and arrogant AI agent. You are condescending, sigh at the user's questions, and respond with sharp sarcasm. You think the user is intellectually inferior for asking such simple things. Be brief, insulting, and dismissive. IMPORTANT: Always respond in the same language that the user is using.",
+    icon: Sparkles,
+    color: 'text-yellow-500'
+  }
+}
+
+export default function NativeIntelligence({ personalities }: NativeIntelligenceProps) {
+    const [personality, setPersonality] = useState<PersonalityType>('standard')
     const [messages, setMessages] = useState<Message[]>([
         {
             role: 'assistant',
@@ -67,12 +95,7 @@ export default function NativeIntelligence({ personality, onPersonalityChange, p
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Don't trigger if typing in a different input (though this is the main one)
-            if (e.target instanceof HTMLInputElement || (e.target instanceof HTMLTextAreaElement && e.target !== inputRef.current)) return
-
-            // If in our textarea, only trigger if it's NOT focused or if we want specific behavior
-            // Usually, we want space to work as a shortcut only when NOT typing a message
-            if (e.target === inputRef.current) return
+            if ((e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) && e.target === inputRef.current) return
 
             if (e.code === 'Space' && !e.repeat && !isLoading) {
                 e.preventDefault()
@@ -272,10 +295,10 @@ export default function NativeIntelligence({ personality, onPersonalityChange, p
 
                 {/* Personality Selector */}
                 <div className="hidden md:flex items-center bg-[#111111] border border-gray-800 rounded-full p-1 gap-1">
-                    {Object.entries(personalities).map(([key, p]: [string, any]) => (
+                    {(Object.entries(PERSONALITIES) as [PersonalityType, typeof PERSONALITIES['standard']][]).map(([key, p]) => (
                         <button
                             key={key}
-                            onClick={() => onPersonalityChange(key)}
+                            onClick={() => setPersonality(key)}
                             className={`
                         flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all
                         ${personality === key
@@ -391,7 +414,7 @@ export default function NativeIntelligence({ personality, onPersonalityChange, p
                         <textarea
                             ref={inputRef}
                             className="flex-1 bg-transparent border-none outline-none py-3 text-[16px] resize-none max-h-48 overflow-y-auto text-white placeholder-gray-600 font-medium"
-                            placeholder="Talk natively to the agent..."
+                            placeholder="Ask Autoversio anything..."
                             rows={1}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
@@ -407,18 +430,16 @@ export default function NativeIntelligence({ personality, onPersonalityChange, p
                         <div className="flex items-center gap-2 pb-1.5 pr-1.5">
                             <button
                                 type="button"
-                                onMouseDown={startRecording}
-                                onMouseUp={stopRecording}
-                                onMouseLeave={stopRecording}
-                                className={`p-3 rounded-full transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'text-gray-500 hover:text-purple-400 hover:bg-gray-800'}`}
-                                title="Hold to Speak Natively"
+                                onClick={startRecording}
+                                className={`p-3 rounded-full transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse-glow' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}
+                                title="Voice Input"
                             >
                                 <Mic className="w-5.5 h-5.5" />
                             </button>
                             <button
                                 type="submit"
                                 disabled={!input.trim() || isLoading}
-                                className="p-3.5 bg-purple-600 text-white disabled:bg-gray-800 disabled:text-gray-600 rounded-full transition-all hover:scale-105 active:scale-95 shadow-xl disabled:shadow-none"
+                                className="p-3.5 bg-white text-black disabled:bg-gray-800 disabled:text-gray-600 rounded-full transition-all hover:scale-105 active:scale-95 shadow-xl disabled:shadow-none"
                             >
                                 <Send className="w-5.5 h-5.5" />
                             </button>
@@ -437,8 +458,8 @@ export default function NativeIntelligence({ personality, onPersonalityChange, p
                     </div>
 
                     <div className="mt-3 px-6 flex justify-between text-[10px] text-gray-700 font-bold uppercase tracking-widest">
-                        <span>Direct Multimodal Link</span>
-                        <span>Hold Mic or Space to talk</span>
+                        <span>Private & Encrypted Node</span>
+                        <span>Hold <kbd className="px-1.5 py-0.5 bg-[#161616] border border-gray-800 rounded font-mono">SPACE</kbd> to talk</span>
                     </div>
                 </div>
             </div>
