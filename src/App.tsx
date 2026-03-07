@@ -109,6 +109,7 @@ function App() {
   const [personality, setPersonality] = useState<PersonalityType>('standard')
   const [voiceOutput, setVoiceOutput] = useState(true)
   const [ttsEngine, setTtsEngine] = useState<'auto' | 'kokoro' | 'piper'>(() => (localStorage.getItem('tts_engine_stt') as 'auto' | 'kokoro' | 'piper') || 'auto')
+  const [health, setHealth] = useState<{ whisper_connected: boolean; ultravox_connected: boolean } | null>(null)
 
   // --- Refs ---
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -146,6 +147,25 @@ function App() {
   useEffect(() => {
     isRecordingRef.current = isRecording
   }, [isRecording])
+
+  // --- Health Check ---
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const response = await fetch('/api/health')
+        const data = await response.json()
+        setHealth({
+          whisper_connected: data.whisper_connected,
+          ultravox_connected: data.ultravox_connected
+        })
+      } catch (err) {
+        setHealth({ whisper_connected: false, ultravox_connected: false })
+      }
+    }
+    checkHealth()
+    const interval = setInterval(checkHealth, 15000)
+    return () => clearInterval(interval)
+  }, [])
 
   // --- Spacebar Logic (Global) ---
   useEffect(() => {
@@ -451,6 +471,18 @@ function App() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-[#161616] border border-gray-800 rounded-full">
+                    <div className={`w-1.5 h-1.5 rounded-full ${health?.whisper_connected ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      Whisper {health?.whisper_connected ? 'Live' : 'Offline'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-[#161616] border border-gray-800 rounded-full">
+                    <div className={`w-1.5 h-1.5 rounded-full ${health?.ultravox_connected ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      LLM {health?.ultravox_connected ? 'Live' : 'Offline'}
+                    </span>
+                  </div>
                   {/* TTS Engine Toggle */}
                   {voiceOutput && (
                     <div className="flex items-center bg-[#111111] border border-gray-800 rounded-full overflow-hidden">
