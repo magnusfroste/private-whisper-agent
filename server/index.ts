@@ -24,6 +24,8 @@ const KOKORO_URL = process.env.KOKORO_URL || 'http://kokoro-tts:8003'
 const PIPER_URL = process.env.PIPER_URL || 'http://piper-tts:8004'
 const ULTRAVOX_MODEL_NAME = process.env.ULTRAVOX_MODEL_NAME || 'ultravox'
 
+const DEFAULT_SYSTEM_PROMPT = "You are the Autoversio Native Agent. You are a state-of-the-art multimodal AI. You hear the user directly. IMPORTANT: You must always respond in exactly the same language as the user. If they speak English, you speak English. If they speak Swedish, you speak Swedish. Be concise and professional."
+
 console.log('[Config] PORT:', PORT)
 console.log('[Config] WHISPER_URL:', WHISPER_URL)
 console.log('[Config] ULTRAVOX_URL:', ULTRAVOX_URL)
@@ -352,7 +354,7 @@ app.post('/api/chat/native', upload.single('file'), async (req: MulterRequest, r
   console.log('[NativeChat] Request received')
 
   const prompt = (req.body.prompt as string) || "User is speaking."
-  const systemPrompt = (req.body.systemPrompt as string) || "You are the Autoversio Native Agent. You are a state-of-the-art multimodal AI. You hear the user directly. IMPORTANT: You must always respond in exactly the same language as the user. If they speak English, you speak English. If they speak Swedish, you speak Swedish. Be concise and professional."
+  const systemPrompt = (req.body.systemPrompt as string) || DEFAULT_SYSTEM_PROMPT
 
   try {
     let content: any[] = [{ type: 'text', text: prompt }]

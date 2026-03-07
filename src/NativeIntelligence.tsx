@@ -51,6 +51,8 @@ const PERSONALITIES: Record<PersonalityType, { name: string, prompt: string | nu
   }
 }
 
+const DEFAULT_SYSTEM_PROMPT = "You are the Autoversio Native Agent. You are a state-of-the-art multimodal AI. You hear the user directly. IMPORTANT: You must always respond in exactly the same language as the user. If they speak English, you speak English. If they speak Swedish, you speak Swedish. Be concise and professional."
+
 export default function NativeIntelligence(_props: NativeIntelligenceProps) {
     const [personality, setPersonality] = useState<PersonalityType>('standard')
     const [messages, setMessages] = useState<Message[]>([
