@@ -1,4 +1,4 @@
-import { Shield, Info, Gavel, Globe } from 'lucide-react';
+import { Shield, Info, Gavel, Globe, CheckCircle } from 'lucide-react';
 
 export default function SovereignCompliance() {
     return (
