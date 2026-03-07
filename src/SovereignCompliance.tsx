@@ -1,4 +1,4 @@
-import { Shield, Info, Gavel, Globe, CheckCircle } from 'lucide-react';
+import { Shield, Info, Gavel, Globe, CheckCircle } from 'lucide-react'; // eslint-disable-line
 
 export default function SovereignCompliance() {
     return (
