@@ -21,7 +21,7 @@
 
 ## What is this?
 
-**Autoversio Intelligence Node** is a complete, self-hosted voice AI powerhouse. It bundles best-in-class open-source models into a single deployable stack — giving you the power of a modern voice assistant with full data sovereignty and zero cloud dependencies.
+**Whisper Privacy Chat Agent** is a complete, self-hosted voice AI powerhouse. It bundles best-in-class open-source models into a single deployable stack — giving you the power of a modern voice assistant with full data sovereignty and zero cloud dependencies.
 
 > **Speak → Think → Speak back.** All on your own hardware.
 
