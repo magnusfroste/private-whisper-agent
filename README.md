@@ -173,7 +173,7 @@ graph TD
 
 | Service | Image | Port | GPU |
 |---|---|---|---|
-| `app` | `Dockerfile.app` | 3000 | ❌ |
+| `app` | `Dockerfile` | 3000 | ❌ |
 | `whisper-vllm` | `Dockerfile.whisper-vllm` | 8001 | ✅ |
 | `ultravox-vllm` | `vllm/vllm-openai` | 8002 | ✅ |
 | `kokoro-tts` | `ghcr.io/remsky/kokoro-fastapi-cpu` | 8003 | ❌ CPU |
