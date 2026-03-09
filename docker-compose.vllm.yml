@@ -40,7 +40,7 @@ services:
     ipc: host
     shm_size: '32gb'
     command: >
-      openai/whisper-large-v3 --served-model-name whisper-large-v3 --host 0.0.0.0 --port 8000 --gpu-memory-utilization 0.20 --dtype auto --enforce-eager --max-model-len 448 --trust-remote-code --max-num-seqs 8 --swap-space 4
+      openai/whisper-large-v3 --served-model-name whisper-large-v3 --host 0.0.0.0 --port 8000 --gpu-memory-utilization 0.20 --dtype auto --enforce-eager --max-model-len 448 --trust-remote-code --max-num-seqs 8
 
   ultravox-vllm:
     image: vllm/vllm-openai:latest
